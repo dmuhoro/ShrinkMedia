@@ -19,6 +19,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "us
 data class PersistedUserSettings(
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val autoSaveToMediaStore: Boolean = false,
+    val pauseCompressionOnLowBattery: Boolean = false,
     val imageQuality: CompressionQuality = CompressionQuality.MEDIUM,
     val videoQuality: CompressionQuality = CompressionQuality.MEDIUM,
     val totalHistoricalSavedBytes: Long = 0L,
@@ -30,6 +31,7 @@ class SettingsRepository(private val context: Context) {
     private object PreferencesKeys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val AUTO_SAVE = booleanPreferencesKey("auto_save_mediastore")
+        val PAUSE_ON_LOW_BATTERY = booleanPreferencesKey("pause_compression_on_low_battery")
         val IMAGE_QUALITY = stringPreferencesKey("image_quality")
         val VIDEO_QUALITY = stringPreferencesKey("video_quality")
         val TOTAL_SAVED_BYTES = longPreferencesKey("total_saved_bytes")
@@ -49,6 +51,7 @@ class SettingsRepository(private val context: Context) {
             val themeMode = try { AppThemeMode.valueOf(themeStr) } catch (e: Exception) { AppThemeMode.SYSTEM }
 
             val autoSave = preferences[PreferencesKeys.AUTO_SAVE] ?: false
+            val pauseOnLowBattery = preferences[PreferencesKeys.PAUSE_ON_LOW_BATTERY] ?: false
 
             val imgQStr = preferences[PreferencesKeys.IMAGE_QUALITY] ?: CompressionQuality.MEDIUM.name
             val imgQuality = try { CompressionQuality.valueOf(imgQStr) } catch (e: Exception) { CompressionQuality.MEDIUM }
@@ -62,6 +65,7 @@ class SettingsRepository(private val context: Context) {
             PersistedUserSettings(
                 themeMode = themeMode,
                 autoSaveToMediaStore = autoSave,
+                pauseCompressionOnLowBattery = pauseOnLowBattery,
                 imageQuality = imgQuality,
                 videoQuality = vidQuality,
                 totalHistoricalSavedBytes = savedBytes,
@@ -78,6 +82,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateAutoSave(autoSave: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.AUTO_SAVE] = autoSave
+        }
+    }
+
+    suspend fun updatePauseCompressionOnLowBattery(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PAUSE_ON_LOW_BATTERY] = enabled
         }
     }
 
