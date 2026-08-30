@@ -53,7 +53,7 @@ wrapper gate. Full green gate recorded in `docs/evidence/`.
 | `npm run lint` (tsc --noEmit) | ✅ evidence 2026-08-30 |
 | `npm test` (Vitest) | ✅ evidence 2026-08-30 |
 | `npm run build` | ✅ evidence 2026-08-30 |
-| Android `assembleDebug` | BLOCKED — wrapper added; SDK 35 install pending |
+| Android `assembleDebug` | ✅ evidence 2026-08-30 (`app-debug.apk` built; FFmpegKit coordinate fixed to a real published artifact) |
 
 ## Artifacts
 

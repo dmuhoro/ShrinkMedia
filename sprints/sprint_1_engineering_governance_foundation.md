@@ -20,7 +20,7 @@
 5. **Web discipline**: extract pure helpers to `src/lib/`, add Vitest, green
    lint/test/build.
 6. **Android reproducibility**: Gradle wrapper committed; `assembleDebug`
-   gate recorded (honestly: BLOCKED until SDK 35 is installed).
+   green (SDK 35 installed locally; evidence in `docs/evidence/2026-08-30_android_config_check.md`).
 
 ---
 
@@ -47,7 +47,8 @@
 - [x] Web: `npm run lint` green.
 - [x] Web: `npm test` green.
 - [x] Web: `npm run build` green.
-- [ ] Android: `assembleDebug` green (BLOCKED — requires SDK 35 install).
+- [x] Android: `assembleDebug` green — SDK 35 + build-tools installed, wrapper
+  used, `app-debug.apk` produced (see `docs/evidence/2026-08-30_android_config_check.md`).
 - [x] Evidence logged under `docs/evidence/`.
 - [x] CHANGELOG + sprint records updated.
 - [x] All commits SSH-signed; pushed to `origin/main`.

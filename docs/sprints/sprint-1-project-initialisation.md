@@ -36,5 +36,6 @@ management in `settings.gradle.kts`, and a single `:app` Android module.
 
 ## Cross-Reference
 
-`docs/current-state.md` C1/C8. Device build gate remains BLOCKED until the
-wrapper + SDK are installed (release-readiness).
+`docs/current-state.md` C1/C8. Original device build gate was BLOCKED (no
+wrapper + SDK); unblocked on 2026-08-30 — see
+`docs/evidence/2026-08-30_android_config_check.md` and `docs/release-readiness.md`.

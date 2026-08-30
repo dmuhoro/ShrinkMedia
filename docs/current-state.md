@@ -14,7 +14,7 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C1 | Engineering governance scaffold | ✅ | Constitution, ADRs, decisions, sprints, evidence, CI |
 | C2 | Web simulator (Vite+React+TS) lint/build/tests | ✅ | `npm run lint` / `npm test` / `npm run build` green (evidence log) |
 | C3 | Image compression (bitmap sampling + JPEG) | ⚠️ | Helper compiled; JVM-verified math mirror in `src/lib`; device run pending |
-| C4 | Video compression (FFmpegKit Lite, preset CRF/bitrate) | ⚠️ | `compressVideoFile` awaits session state; device run pending |
+| C4 | Video compression (FFmpegKit x264, preset CRF/bitrate) | ⚠️ | `compressVideoFile` awaits session state; device run pending |
 | C5 | Foreground batch service + progress notification | ⚠️ | `BatchCompressionService`; needs device run to verify notification UX |
 | C6 | Battery-aware pause/resume (opt-in) | ⚠️ | Controller + receiver; **never drops queue**; device run pending |
 | C7 | Autosave to MediaStore (opt-in, no permission) | ⚠️ | `saveToPublicMediaStore` returns Boolean; device run pending |

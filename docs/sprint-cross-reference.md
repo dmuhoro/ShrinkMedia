@@ -17,7 +17,7 @@
 | 4 — Live autosave | Per-file DataStore read | `settingsRepo.userSettingsFlow.first()` inside loop | ✅ Code exists |
 | 5 — Governance | Constitution/ADRs/sprints/evidence/CI | Files at HEAD | ✅ Code exists |
 | 5 — Web gates green | lint/test/build | `docs/evidence/2026-08-30_web_lint_test_build.md` | ✅ Cited |
-| 5 — Android gate | `assembleDebug` | BLOCKED (SDK install pending) | ⚠️ Open |
+| 5 — Android gate | `assembleDebug` | `docs/evidence/2026-08-30_android_config_check.md` — `app-debug.apk` built (SDK 35, 4 ABIs, no INTERNET permission); FFmpegKit dependency fixed to a published artifact | ✅ Cited |
 
 ## Rules That Keep This Honest
 

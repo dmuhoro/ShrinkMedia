@@ -21,15 +21,15 @@ Mirror the table after every sprint close.
 
 | Item | Status |
 |---|---|
-| Web lint / test / build | PENDING → green in sprint 5 (evidence cites) |
-| Android `assembleDebug` | BLOCKED (SDK 35 install) |
-| No INTERNET permission in manifest | PASS (verified) |
-| Governance scaffold | PENDING → complete in sprint 5 |
-| CHANGELOG + sprint records | PENDING → updated in sprint 5 |
+| Web lint / test / build | PASS — `docs/evidence/2026-08-30_web_lint_test_build.md` |
+| Android `assembleDebug` | PASS — `docs/evidence/2026-08-30_android_config_check.md` (SDK 35, `app-debug.apk`; FFmpegKit coordinate fixed) |
+| No INTERNET permission in manifest | PASS (verified; APK badging lists only foreground-service/notification) |
+| Governance scaffold | PASS — `docs/evidence/2026-08-30_governance_scaffold.md` |
+| CHANGELOG + sprint records | PASS — updated in `docs/release-readiness.md`, sprint records, cross-reference |
 
 ## Blockers
-1. Android SDK `platforms;android-35` + `build-tools` not installed from this
-   environment; Gradle wrapper added in sprint 5.
+None for the v0.2.0 gates. Manual hardware QA (MediaStore round-trip on a
+physical device) is still an open, non-gated step before a store release.
 
 ## Definition of Release
 - All PASS rows cited to `docs/evidence/`.
