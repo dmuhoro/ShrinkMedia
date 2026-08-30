@@ -6,7 +6,7 @@ ADR (status, context, decision, consequences, alternatives considered).
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
 | [ADR-001](ADR-001-native-android-kotlin-compose.md) | Native Android with Kotlin & Jetpack Compose | Accepted | 2026-08-30 |
-| [ADR-002](ADR-002-ffmpegkit-video-compression.md) | FFmpegKit Lite for video compression | Accepted | 2026-08-30 |
+| [ADR-002](ADR-002-ffmpegkit-video-compression.md) | FFmpegKit for video compression (accepted; amended package coordinate) | Accepted | 2026-08-30 |
 | [ADR-003](ADR-003-foreground-service-batch.md) | Foreground service for background batch compression | Accepted | 2026-08-30 |
 | [ADR-004](ADR-004-datastore-settings.md) | Jetpack DataStore for settings persistence | Accepted | 2026-08-30 |
 | [ADR-005](ADR-005-scoped-storage-mediastore.md) | Scoped storage + MediaStore with no global permission | Accepted | 2026-08-30 |
