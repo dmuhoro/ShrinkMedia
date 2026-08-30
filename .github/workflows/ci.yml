@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (lint · test · build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check / lint gate
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+  android:
+    name: Android (assembleDebug)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle wrapper cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+
+  governance:
+    name: Governance guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Manifest declares NO INTERNET permission
+        run: |
+          if rg -n "INTERNET|http://|https://" app/src/main/AndroidManifest.xml; then
+            echo "FAIL: INTERNET/network surface present in manifest"
+            exit 1
+          fi
+          echo "PASS: manifest declares no INTERNET permission"
+
+      - name: No real secrets committed
+        run: |
+          if git ls-files | rg -x '\.env$|\.env\.local$|\.env\.production$'; then
+            echo "FAIL: a real .env file is tracked"
+            exit 1
+          fi
+          echo "PASS: no real .env files tracked"
+
+      - name: Evidence exists for current sprint
+        run: test -d docs/evidence && echo "PASS: evidence log present"

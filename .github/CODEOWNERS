@@ -1,0 +1,20 @@
+# Code ownership by area. Default is the maintainer.
+
+* @dmuhoro
+
+# Architecture decisions and the Constitution are the highest authority — always reviewed.
+docs/engineering/CONSTITUTION.md @dmuhoro
+docs/adr/ @dmuhoro
+docs/decisions.md @dmuhoro
+
+# Settings persistence is additive-only; changes are sensitive.
+app/src/main/java/com/example/mediacompressor/SettingsDataStore.kt @dmuhoro
+
+# The batch service owns the no-drop pause/resume invariant.
+app/src/main/java/com/example/mediacompressor/BatchCompressionService.kt @dmuhoro
+
+# The manifest no-INTERNET invariant.
+app/src/main/AndroidManifest.xml @dmuhoro
+
+# CI gates protect every push.
+.github/workflows/ @dmuhoro

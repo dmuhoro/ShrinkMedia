@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a defect in the toolkit or the web simulator.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. First check `docs/current-state.md` — if the
+        feature is marked **ASPIRATIONAL** it is not shipped yet.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      description: Where did the bug happen?
+      options:
+        - Android app (native)
+        - Web simulator
+        - Build / CI
+        - Docs / governance
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device / API level
+      description: e.g. "Pixel 7, Android 14 (API 34)"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps, including media type and quality preset if relevant.
+      placeholder: |
+        1. Open Media tab
+        2. Compress a 4K video at HIGH
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the surfaced error message. Silent failures are also bugs — say "nothing happened".
+    validations:
+      required: true
+  - type: dropdown
+    id: invariant
+    attributes:
+      label: Privacy invariant impact
+      description: Does this bug involve files leaving the device, or new permissions?
+      options:
+        - "No"
+        - "Yes — files leave the device / network access"
+        - "Not sure"
+    validations:
+      required: true

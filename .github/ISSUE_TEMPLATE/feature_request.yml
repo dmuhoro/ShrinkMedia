@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose a new capability for ShrinkMedia.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ShrinkMedia is on-device by constitution. If your feature needs network
+        access or new permissions, it requires an ADR — call that out.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem it solves
+      placeholder: "When I compress a large batch, I want..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: invariant
+    attributes:
+      label: Impact on the on-device invariant
+      options:
+        - None — stays fully on-device
+        - Needs network access / new permissions (requires ADR)
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Android app
+        - Web simulator
+        - Both
+        - Documentation / governance
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact estimate
+      description: Rough blast radius — files/tabs/settings/modules touched.
+    validations:
+      required: false
