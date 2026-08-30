@@ -1,37 +1,94 @@
-# Media Compressor (Android - Kotlin & Jetpack Compose)
+# ShrinkMedia
 
-A rapid-prototype, high-performance Android application built with **Kotlin**, **Jetpack Compose (Material 3)**, **Coroutines**, **Coil**, and **FFmpegKit Lite** for compressing images and videos.
+> Private media & document toolkit for Android — compression, PDF tools, and
+> local text extraction. Every byte is processed **on-device**; the app declares
+> **no INTERNET permission**.
 
-## Project Structure
+## Status
+
+| Capability | Tracked in | Status |
+|------------|-----------|--------|
+| Engineering governance | `docs/current-state.md` | ✅ Implemented & verified |
+| Native image compression | `docs/current-state.md` | ✅ Implemented (JVM-level verified via helper tests; device run required) |
+| Native video compression (FFmpegKit) | `docs/current-state.md` | ✅ Implemented |
+| Foreground batch service (battery-aware) | `docs/current-state.md` | ✅ Implemented |
+| DataStore settings persistence | `docs/current-state.md` | ✅ Implemented |
+| PDF merge / split / build / text extract | `docs/current-state.md` | ✅ Implemented (device run required) |
+| Web simulator (Vite + React + TS) | `docs/current-state.md` | ✅ Implemented & verified |
+| AICore local-model handoff | `docs/current-state.md` | ⚠️ ASPIRATIONAL |
+
+> Honesty over optimism: implemented means code + verification; ASPIRATIONAL
+> means designed but not yet wired and verified. Nothing is marked done on
+> narrative alone (Constitution Article VII).
+
+## What It Does
+
+- **Compress** images (in-memory sampling + JPEG quality) and videos
+  (FFmpegKit `libx264` + `aac`, CRF & bitrate caps) at Low / Medium / High.
+- **Batch** multiple files through a foreground service with real-time progress.
+  The queue pauses automatically on low battery (opt-in) and **never drops an
+  item**.
+- **Autosave** output to public `Pictures/ShrinkMedia` / `Movies/ShrinkMedia`
+  (opt-in), or keep it in the app cache.
+- **Documents**: image-to-PDF portfolios, PDF merge, PDF page split, PDF
+  metrics, and embedded-text extraction via `android.graphics.pdf`.
+- **Audit**: compression reductions and timings are tracked and summarised in
+  the UI; totals persist via DataStore.
+
+## Repo Map
+
 ```
-├── build.gradle.kts                      # Root Gradle build script
-├── settings.gradle.kts                   # Settings and repository configuration
-├── gradle.properties                     # JVM and AndroidX properties
-└── app/
-    ├── build.gradle.kts                  # App module dependencies & SDK configs
-    └── src/main/
-        ├── AndroidManifest.xml           # App manifest with FileProvider setup
-        ├── java/com/example/mediacompressor/
-        │   └── MainActivity.kt           # Complete Jetpack Compose UI & Compression Engine
-        └── res/
-            ├── values/strings.xml        # App resources
-            └── xml/file_paths.xml        # FileProvider sharing paths
+app/src/main/java/com/example/mediacompressor/
+  MainActivity.kt               Toolkit UI + compression/PDF engine
+  SettingsDataStore.kt          Persisted settings (SettingsRepository)
+  BatchCompressionService.kt    Foreground batch service + pause controller
+src/                            Web simulator (Vite + React + TS + Tailwind)
+docs/                           Constitution, ADRs, sprints, evidence, runbooks
+sprints/                        Active sprint plans
+.ai/                            AI context + agent definitions
+.github/workflows/ci.yml        Quality gates
 ```
 
-## Features
-- **Modern Jetpack Compose UI**: Clean Material 3 design with System, Light, and Dark appearance modes.
-- **Single & Batch Mode**: Compress individual files or queue multiple images/videos using `PickMultipleVisualMedia`.
-- **Fast Image Compression**: In-memory sampling and scaling with JPEG quality presets (Low, Medium, High).
-- **Fast Video Compression**: FFmpegKit Lite CRF & bitrate-constrained encoding (`libx264` + `aac`).
-- **Scoped Storage & MediaStore**: Optional auto-save directly to public `Pictures/MediaCompressor` or `Movies/MediaCompressor`.
-- **Audit Logs**: Generates `.txt` compression performance reports with space reduction % and processing duration.
-- **Android ShareSheet**: One-tap sharing to WhatsApp, Telegram, Gmail, Drive, etc., via `FileProvider`.
+## Architecture
 
-## How to Build & Run
-1. Clone this repository to your local machine:
-   ```bash
-   git clone <repo-url>
-   ```
-2. Open the project root in **Android Studio** (Koala / Ladybug or newer with JDK 17+).
-3. Let Gradle sync and download dependencies.
-4. Run on any Android device or emulator running **Android 7.0+ (API 24 to 35)**.
+Native app: **Kotlin + Jetpack Compose (Material 3)**, ViewModel-driven
+`UiState`, Coil for media rendering, DataStore for settings, FFmpegKit Lite for
+video. All processing is synchronous-within-coroutines on `Dispatchers.IO`.
+Web: Vite + React + TypeScript simulator mirroring the native flows.
+
+See `docs/architecture.md` and `docs/current-state.md` (read both before any
+task).
+
+## Build & Run
+
+### Android (Android Studio / JDK 17+ / SDK 35)
+
+```bash
+./gradlew assembleDebug   # via the Gradle wrapper
+./gradlew test
+```
+
+Run on any device or emulator running **Android 7.0+ (API 24–35)**.
+
+### Web simulator
+
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run lint       # tsc --noEmit
+npm test           # Vitest
+npm run build      # production bundle
+```
+
+## Governance
+
+- **Constitution** — `docs/engineering/CONSTITUTION.md` (supreme authority).
+- **Operating rules** — `AGENTS.md`.
+- **Decisions** — `docs/adr/` (ADRs) and `docs/decisions.md`.
+- **Sprint records** — `docs/sprints/`; active plans in `sprints/`.
+- **Evidence** — `docs/evidence/`; release gates in `docs/release-readiness.md`.
+- **Contribute** — `CONTRIBUTING.md` (all commits must be SSH-signed).
+
+## License
+
+MIT — © 2026 Daniel Muhoro. See `LICENSE`.
