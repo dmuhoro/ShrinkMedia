@@ -1,0 +1,207 @@
+package com.example.mediacompressor
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import java.io.File
+import java.util.ArrayList
+
+class BatchCompressionService : Service() {
+
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+    private lateinit var notificationManager: NotificationManager
+
+    companion object {
+        const val CHANNEL_ID = "batch_compression_channel"
+        const val CHANNEL_NAME = "Media Compression Background Tasks"
+        const val NOTIFICATION_ID = 1001
+
+        const val ACTION_START_BATCH = "com.example.mediacompressor.START_BATCH"
+        const val ACTION_CANCEL_BATCH = "com.example.mediacompressor.CANCEL_BATCH"
+
+        const val EXTRA_URIS = "extra_uris"
+        const val EXTRA_IS_VIDEO = "extra_is_video"
+        const val EXTRA_QUALITY = "extra_quality"
+        const val EXTRA_AUTO_SAVE = "extra_auto_save"
+
+        fun startBatch(
+            context: Context,
+            uris: List<Uri>,
+            isVideo: Boolean,
+            qualityName: String,
+            autoSave: Boolean
+        ) {
+            val intent = Intent(context, BatchCompressionService::class.java).apply {
+                action = ACTION_START_BATCH
+                putParcelableArrayListExtra(EXTRA_URIS, ArrayList(uris))
+                putExtra(EXTRA_IS_VIDEO, isVideo)
+                putExtra(EXTRA_QUALITY, qualityName)
+                putExtra(EXTRA_AUTO_SAVE, autoSave)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createNotificationChannel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START_BATCH -> {
+                val uris = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableArrayListExtra(EXTRA_URIS, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableArrayListExtra(EXTRA_URIS)
+                } ?: emptyList()
+
+                val isVideo = intent.getBooleanExtra(EXTRA_IS_VIDEO, false)
+                val qualityName = intent.getStringExtra(EXTRA_QUALITY) ?: "MEDIUM"
+                val autoSave = intent.getBooleanExtra(EXTRA_AUTO_SAVE, false)
+
+                startForeground(NOTIFICATION_ID, buildProgressNotification(0, uris.size, "Starting batch compression..."))
+                executeBatchProcessing(uris, isVideo, qualityName, autoSave)
+            }
+            ACTION_CANCEL_BATCH -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    private fun executeBatchProcessing(
+        uris: List<Uri>,
+        isVideo: Boolean,
+        qualityName: String,
+        autoSave: Boolean
+    ) {
+        serviceScope.launch {
+            val total = uris.size
+            var successCount = 0
+
+            uris.forEachIndexed { index, uri ->
+                val current = index + 1
+                val mediaTypeStr = if (isVideo) "video" else "image"
+                val statusText = "Compressing $mediaTypeStr $current of $total..."
+
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    buildProgressNotification(current, total, statusText)
+                )
+
+                // Execute compression step
+                val quality = try {
+                    CompressionQuality.valueOf(qualityName)
+                } catch (e: Exception) {
+                    CompressionQuality.MEDIUM
+                }
+
+                val compressedFile: File? = if (isVideo) {
+                    compressVideoFile(applicationContext, uri, quality)
+                } else {
+                    compressImageFile(applicationContext, uri, quality)
+                }
+
+                if (compressedFile != null && compressedFile.exists() && compressedFile.length() > 0L) {
+                    successCount++
+                    
+                    // Respect live DataStore autoSaveToMediaStore preference during batch execution
+                    val shouldAutoSave = try {
+                        val settingsRepo = SettingsRepository(applicationContext)
+                        settingsRepo.userSettingsFlow.first().autoSaveToMediaStore
+                    } catch (e: Exception) {
+                        autoSave
+                    }
+
+                    if (shouldAutoSave) {
+                        saveToPublicMediaStore(applicationContext, compressedFile, isVideo)
+                    }
+                }
+            }
+
+            // Finished Notification
+            val finalNotification = NotificationCompat.Builder(this@BatchCompressionService, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_upload_done)
+                .setContentTitle("Batch Compression Complete")
+                .setContentText("Successfully compressed $successCount of $total ${if (isVideo) "videos" else "images"}.")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(createActivityPendingIntent())
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID + 1, finalNotification)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun buildProgressNotification(current: Int, total: Int, message: String): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setContentTitle("Media Compressor")
+            .setContentText(message)
+            .setSubText(if (total > 0) "$current / $total" else null)
+            .setProgress(total, current, total == 0)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setContentIntent(createActivityPendingIntent())
+            .build()
+    }
+
+    private fun createActivityPendingIntent(): PendingIntent {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        return PendingIntent.getActivity(this, 0, intent, flags)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows real-time progress for background media compressions"
+                setShowBadge(false)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceJob.cancel()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
