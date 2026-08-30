@@ -10,6 +10,8 @@ import {
   Layers, Download, Undo, BellRing, Database, ArrowUpRight, AlertTriangle, X, Play,
   ChevronDown, ChevronUp, Activity
 } from 'lucide-react';
+import { compressionRatio, reductionPercent } from './lib/compression';
+import { formatBytes } from './lib/format';
 
 const GRADLE_CODE = `plugins {
     id("com.android.application")
@@ -456,13 +458,6 @@ interface PendingTrashItem {
   expiresAt: number;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(i >= 2 ? 1 : 0)} ${units[i]}`;
-}
-
 export default function App() {
   const [activeTab, setActiveTab] = useState<'preview' | 'gradle' | 'service' | 'datastore'>('preview');
   const [copiedTab, setCopiedTab] = useState<string | null>(null);
@@ -679,7 +674,7 @@ export default function App() {
     const queueToProcess = [...pendingBatchQueue];
     const batchTotal = queueToProcess.length;
     const selectedPreset = isVideo ? videoQuality : imageQuality;
-    const ratio = selectedPreset === 'Low' ? 0.28 : selectedPreset === 'Medium' ? 0.48 : 0.72;
+    const ratio = compressionRatio(selectedPreset);
 
     setIsLoading(true);
     setBatchProgress({ current: 1, total: batchTotal });
@@ -726,7 +721,7 @@ export default function App() {
           mediaType: isVideo ? 'VIDEO' : 'IMAGE',
           originalSize: newItem.originalSize,
           compressedSize: newItem.compressedSize,
-          reductionPercent: Math.round(100 - (dummyCompressed / dummyOriginal) * 100),
+          reductionPercent: reductionPercent(dummyOriginal, dummyCompressed),
           durationMs: duration,
           qualityPreset: selectedPreset.toUpperCase(),
           targetBitrate,
@@ -762,7 +757,7 @@ export default function App() {
     triggerHaptic();
 
     const selectedPreset = type === 'image' ? imageQuality : videoQuality;
-    const ratio = selectedPreset === 'Low' ? 0.28 : selectedPreset === 'Medium' ? 0.48 : 0.72;
+    const ratio = compressionRatio(selectedPreset);
     const originalSize = type === 'image' ? 3800000 : 38500000;
     const dummyName = type === 'image' ? `IMG_${Date.now().toString().slice(-4)}.jpg` : `VID_${Date.now().toString().slice(-4)}.mp4`;
 
@@ -802,7 +797,7 @@ export default function App() {
 
       const compressedSize = Math.round(originalSize * ratio);
       const duration = Date.now() - startTime;
-      const savedPercent = Math.round(100 - (compressedSize / originalSize) * 100);
+      const savedPercent = reductionPercent(originalSize, compressedSize);
 
       const newItem: CompressionItem = {
         id: Date.now().toString(),
@@ -1183,7 +1178,7 @@ export default function App() {
 
                       <div className="flex items-center justify-between text-[11px] font-semibold">
                         <span className="text-emerald-500">
-                          Reduction: {Math.round(100 - (currentResult.compressedSize / currentResult.originalSize) * 100)}% smaller
+                          Reduction: {reductionPercent(currentResult.originalSize, currentResult.compressedSize)}% smaller
                         </span>
                         <span className={isDarkMode ? 'text-neutral-400' : 'text-neutral-500'}>
                           {currentResult.timeTakenMs} ms
