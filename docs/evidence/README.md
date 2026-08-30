@@ -8,9 +8,9 @@
 
 | Date | Topic | File | Verdict |
 |------|-------|------|---------|
-| 2026-08-30 | Web simulator lint/test/build baseline | `2026-08-30_web_lint_test_build.md` | PENDING |
-| 2026-08-30 | Engineering governance scaffold verification | `2026-08-30_governance_scaffold.md` | PENDING |
-| 2026-08-30 | Android config self-check (wrapper + DSL) | `2026-08-30_android_config_check.md` | PENDING |
+| 2026-08-30 | Web simulator lint/test/build baseline | `2026-08-30_web_lint_test_build.md` | PASS |
+| 2026-08-30 | Engineering governance scaffold verification | `2026-08-30_governance_scaffold.md` | PASS |
+| 2026-08-30 | Android config self-check (wrapper + DSL) | `2026-08-30_android_config_check.md` | PASS |
 
 ## Format
 
