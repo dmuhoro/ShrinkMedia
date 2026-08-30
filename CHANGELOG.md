@@ -36,6 +36,11 @@ Engineering foundation, unified toolkit, and battery-aware batch compression.
 - Batch compression previously read the autosave flag once at start from a
   stale intent extra; it now respects the **live** DataStore preference per
   file.
+- Android build: the committed `io.github.root0as:ffmpeg-kit-lite:6.0-2`
+  dependency did not exist on any repository, so `assembleDebug` could never
+  resolve. Replaced with the Maven-Central-published `io.github.nikita36078:ffmpeg-kit:6.0.LTS`
+  fork (same `com.arthenica.ffmpegkit` API, libx264 enabled on all ABIs).
+  See `docs/evidence/2026-08-30_android_config_check.md`.
 
 ## [0.1.0] — 2026-08-30
 
