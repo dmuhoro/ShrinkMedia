@@ -25,7 +25,7 @@ Update when files move or modules split.
 | `app/src/main/java/com/example/mediacompressor/SettingsDataStore.kt` | `SettingsRepository`, `PersistedUserSettings`, `Context.dataStore` |
 | `app/src/main/java/com/example/mediacompressor/BatchCompressionService.kt` | Foreground service + `BatchCompressionPauseController` |
 | `app/src/main/AndroidManifest.xml` | Permissions (no INTERNET), service, FileProvider |
-| `app/build.gradle.kts` | Dependencies (FFmpegKit Lite, Coil, DataStore, Compose BOM) |
+| `app/build.gradle.kts` | Dependencies (FFmpegKit, Coil, DataStore, Compose BOM) |
 
 ## Web simulator (`src/`)
 

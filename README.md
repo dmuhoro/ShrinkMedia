@@ -52,7 +52,7 @@ sprints/                        Active sprint plans
 ## Architecture
 
 Native app: **Kotlin + Jetpack Compose (Material 3)**, ViewModel-driven
-`UiState`, Coil for media rendering, DataStore for settings, FFmpegKit Lite for
+`UiState`, Coil for media rendering, DataStore for settings, FFmpegKit (x264) for
 video. All processing is synchronous-within-coroutines on `Dispatchers.IO`.
 Web: Vite + React + TypeScript simulator mirroring the native flows.
 

@@ -22,7 +22,7 @@ Add new ADRs to `docs/adr/`; mirror the index here.
 | ID | Decision |
 |----|----------|
 | 001 | Native Android, Kotlin + Jetpack Compose (no webview/no INTERNET) |
-| 002 | FFmpegKit Lite for video (awaited sessions, presets) |
+| 002 | FFmpegKit x264 for video (awaited sessions, presets; package amended) |
 | 003 | Foreground service for background batch compression |
 | 004 | Jetpack DataStore Preferences via `SettingsRepository` |
 | 005 | Scoped storage + MediaStore, no global storage permission |

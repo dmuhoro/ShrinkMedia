@@ -9,7 +9,7 @@ settings, and the layered ViewModel/toolkit structure.
 2. **Typed conversion results.** `File?` in, caller handles `null` out.
 3. **Single settings boundary.** All persistence through `SettingsRepository`.
 4. **Pause/resume has one source of truth.** `BatchCompressionPauseController.isPaused`.
-5. **Dependency discipline.** FFmpegKit Lite, Coil, DataStore exist — justify
+5. **Dependency discipline.** FFmpegKit, Coil, DataStore exist — justify
    any addition against them.
 
 ## Decision Framework
