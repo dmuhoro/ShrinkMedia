@@ -78,8 +78,9 @@ dependencies {
     // Jetpack DataStore Preferences for Persistent Settings
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // FFmpegKit Lite (Fast, standalone video compression engine)
-    implementation("io.github.root0as:ffmpeg-kit-lite:6.0-2")
+    // FFmpegKit (x264 video compression engine; maintained Central-published fork
+    // exposing the com.arthenica.ffmpegkit API used by MainActivity)
+    implementation("io.github.nikita36078:ffmpeg-kit:6.0.LTS")
 
     // Debug Tooling
     debugImplementation("androidx.compose.ui:ui-tooling")
