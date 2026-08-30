@@ -1,0 +1,7 @@
+{
+  "name": "Media Compressor",
+  "description": "High-performance Media Compressor for Android built with Kotlin and Jetpack Compose.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
