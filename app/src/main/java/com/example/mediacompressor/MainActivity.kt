@@ -69,14 +69,15 @@ data class UiState(
     val status: String = "Ready — all processing stays on-device.", val quality: CompressionQuality = CompressionQuality.MEDIUM,
     val mediaResult: MediaResult? = null, val imageUris: List<Uri> = emptyList(), val mergeUris: List<Uri> = emptyList(), val pdfUri: Uri? = null,
     val pdfMetrics: PdfMetrics? = null, val documentOutput: File? = null, val extractedText: String = "",
-    val autoSave: Boolean = false, val pauseOnLowBattery: Boolean = false
+    val autoSave: Boolean = false, val pauseOnLowBattery: Boolean = false,
+    val totalSavedBytes: Long = 0L, val totalFiles: Long = 0L
 )
 
 class ToolkitViewModel(application: Application) : AndroidViewModel(application) {
     private val settings = SettingsRepository(application.applicationContext)
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
-    init { viewModelScope.launch { settings.userSettingsFlow.collect { saved -> _state.update { it.copy(quality = saved.imageQuality, autoSave = saved.autoSaveToMediaStore, pauseOnLowBattery = saved.pauseCompressionOnLowBattery) } } } }
+    init { viewModelScope.launch { settings.userSettingsFlow.collect { saved -> _state.update { it.copy(quality = saved.imageQuality, autoSave = saved.autoSaveToMediaStore, pauseOnLowBattery = saved.pauseCompressionOnLowBattery, totalSavedBytes = saved.totalHistoricalSavedBytes, totalFiles = saved.totalHistoricalFilesCount) } } } }
     fun tab(tab: ToolkitTab) = _state.update { it.copy(tab = tab) }
     fun quality(quality: CompressionQuality) { _state.update { it.copy(quality = quality) }; viewModelScope.launch { settings.updateImageQuality(quality); settings.updateVideoQuality(quality) } }
     fun autoSave(enabled: Boolean) { _state.update { it.copy(autoSave = enabled) }; viewModelScope.launch { settings.updateAutoSave(enabled) } }
@@ -87,7 +88,16 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         val context = getApplication<Application>().applicationContext; val inputBytes = getFileSizeFromUri(context, uri)
         val output = requireNotNull(if (video) compressVideoFile(context, uri, _state.value.quality) else compressImageFile(context, uri, _state.value.quality)) { "Compression failed." }
         if (_state.value.autoSave) saveToPublicMediaStore(context, output, video)
+        settings.recordCompressionSavings((inputBytes - output.length()).coerceAtLeast(0L))
         _state.update { it.copy(mediaResult = MediaResult(getFileNameFromUri(context, uri) ?: output.name, inputBytes, output, video)) }; "Finished ${output.name}"
+    }
+    fun batchImages(uris: List<Uri>) = startBatch(uris, video = false)
+    fun batchVideos(uris: List<Uri>) = startBatch(uris, video = true)
+    private fun startBatch(uris: List<Uri>, video: Boolean) {
+        if (uris.isEmpty() || _state.value.busy) return
+        val context = getApplication<Application>().applicationContext
+        BatchCompressionService.startBatch(context, uris, video, _state.value.quality.name, _state.value.autoSave)
+        _state.update { it.copy(status = "Foreground batch started: ${uris.size} ${if (video) "videos" else "images"} queued on-device.") }
     }
     fun pdf(uri: Uri) = work("Reading PDF metrics…") { val context = getApplication<Application>().applicationContext; val metrics = readPdfMetrics(context, uri); _state.update { it.copy(pdfUri = uri, pdfMetrics = metrics, extractedText = "", documentOutput = null) }; "Loaded ${metrics.pages} page${if (metrics.pages == 1) "" else "s"}" }
     fun buildPdf() = work("Generating PDF portfolio…") { val context = getApplication<Application>().applicationContext; val output = createPdfFromImages(context, _state.value.imageUris); _state.update { it.copy(documentOutput = output) }; "Created ${output.name}" }
@@ -105,6 +115,8 @@ class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceSt
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let { viewModel.compress(it, false) } }
     val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let { viewModel.compress(it, true) } }
     val imageBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.images(it) }
+    val imageCompressBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.batchImages(it) }
+    val videoCompressBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.batchVideos(it) }
     val pdfBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.mergePdfs(it) }
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::pdf) }
     Box(Modifier.fillMaxSize()) {
@@ -112,7 +124,7 @@ class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceSt
             Column(Modifier.fillMaxSize().padding(inset).padding(horizontal = 20.dp)) {
                 Text(state.status, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, modifier = Modifier.padding(vertical = 12.dp))
                 when (state.tab) {
-                    ToolkitTab.MEDIA -> MediaTab(state, viewModel, { imagePicker.launch("image/*") }, { videoPicker.launch("video/*") })
+                    ToolkitTab.MEDIA -> MediaTab(state, viewModel, { imagePicker.launch("image/*") }, { videoPicker.launch("video/*") }, { imageCompressBatchPicker.launch("image/*") }, { videoCompressBatchPicker.launch("video/*") })
                     ToolkitTab.DOCUMENTS -> DocumentsTab(state, viewModel, { imageBatchPicker.launch("image/*") }, { pdfPicker.launch("application/pdf") }, { pdfBatchPicker.launch("application/pdf") })
                     ToolkitTab.AI -> AiTab(state, viewModel, { pdfPicker.launch("application/pdf") })
                 }
@@ -123,10 +135,12 @@ class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceSt
 }
 private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.Default.PermMedia; ToolkitTab.DOCUMENTS -> Icons.Default.PictureAsPdf; ToolkitTab.AI -> Icons.Default.AutoAwesome }
 
-@Composable private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit, pickVideo: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+@Composable private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit, pickVideo: () -> Unit, pickImages: () -> Unit, pickVideos: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
     item { Hero("Media Engine", "Native Bitmap compression and FFmpeg Kit encoding. Your source files never leave the device.") }
     item { Text("Compression quality", fontWeight = FontWeight.SemiBold); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { CompressionQuality.entries.forEach { FilterChip(selected = state.quality == it, onClick = { vm.quality(it) }, label = { Text(it.name) }) } } }
     item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(pickImage, Modifier.weight(1f)) { Icon(Icons.Default.Image, null); Spacer(Modifier.width(6.dp)); Text("Image") }; Button(pickVideo, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Video") } } }
+    item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedButton(pickImages, Modifier.weight(1f)) { Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Images") }; OutlinedButton(pickVideos, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Videos") } } }
+    item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.padding(16.dp)) { Text("Lifetime savings", fontWeight = FontWeight.SemiBold, fontSize = 13.sp); Text("${formatFileSize(state.totalSavedBytes)} recovered across ${state.totalFiles} file${if (state.totalFiles == 1L) "" else "s"}", fontSize = 15.sp) } } }
     item { Card { Column(Modifier.padding(16.dp)) { Toggle("Save output to gallery", state.autoSave, vm::autoSave); HorizontalDivider(); Toggle("Pause compression on low battery", state.pauseOnLowBattery, vm::pauseOnLowBattery) } } }
     state.mediaResult?.let { item { OutputCard("Latest media", it.name, "${formatFileSize(it.before)} → ${formatFileSize(it.output.length())}") } }
 }

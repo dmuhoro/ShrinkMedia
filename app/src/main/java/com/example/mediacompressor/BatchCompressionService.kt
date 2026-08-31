@@ -153,10 +153,13 @@ class BatchCompressionService : Service() {
 
             if (compressedFile != null && compressedFile.exists() && compressedFile.length() > 0L) {
                 successCount++
-                    
+
+                val inputBytes = getFileSizeFromUri(applicationContext, uri)
+                val settingsRepo = SettingsRepository(applicationContext)
+                settingsRepo.recordCompressionSavings((inputBytes - compressedFile.length()).coerceAtLeast(0L))
+
                 // Respect live DataStore autoSaveToMediaStore preference during batch execution
                 val shouldAutoSave = try {
-                    val settingsRepo = SettingsRepository(applicationContext)
                     settingsRepo.userSettingsFlow.first().autoSaveToMediaStore
                 } catch (e: Exception) {
                     autoSave
