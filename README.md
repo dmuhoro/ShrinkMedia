@@ -84,9 +84,10 @@ npm run build      # production bundle
 - **Constitution** — `docs/engineering/CONSTITUTION.md` (supreme authority).
 - **Operating rules** — `AGENTS.md`.
 - **Decisions** — `docs/adr/` (ADRs) and `docs/decisions.md`.
-- **Sprint records + active plans** — `docs/sprints/` (records 1–6; Sprint 7 is
-  the active plan).
-- **Evidence** — `docs/evidence/`; release gates in `docs/release-readiness.md`.
+- **Sprint records + active plans** — `docs/sprints/` (records 1–7; Sprint 8 is
+  the active final-gate plan for device verification).
+- **Evidence** — `docs/evidence/`; release gates in `docs/release-readiness.md`;
+  step-by-step path in `docs/release-roadmap.md`.
 - **Contribute** — `CONTRIBUTING.md` (all commits must be SSH-signed).
 
 ## License

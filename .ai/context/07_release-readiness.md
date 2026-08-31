@@ -22,8 +22,9 @@ Mirror the table after every sprint close.
 | Item | Status |
 |---|---|
 | AI Studio / Gemini fingerprints removed | PASS — `rg` on tracked files returns no matches |
-| Single sprint folder `docs/sprints/` (1–6 + active plan 7) | PASS |
-| Web lint / test / build still green | PASS — `docs/evidence/2026-08-31_sprint6_cleanup.md` |
+| Single sprint folder `docs/sprints/` (records 1–7 + active plan 8 final gate) | PASS |
+| Web lint / test / build still green | PASS — `docs/evidence/2026-08-31_sprint6_cleanup.md` and `docs/evidence/2026-08-31_release-config_test-hardening.md` |
+| Signed R8-minified release build + signed AAB path | PASS — `docs/evidence/2026-08-31_release-config_test-hardening.md` (dev keystore; production keystore human-owned) |
 
 ## Gate v0.2.0
 
@@ -36,8 +37,12 @@ Mirror the table after every sprint close.
 | CHANGELOG + sprint records | PASS — updated in `docs/release-readiness.md`, sprint records, cross-reference |
 
 ## Blockers
-None for the v0.2.0 gates. Manual hardware QA (MediaStore round-trip on a
-physical device) is still an open, non-gated step before a store release.
+- **Device/emulator runtime verification** (final Sprint 8 gate): real-path
+  instrumented suite compiles but has not run on hardware; battery-pause and
+  autosave walkthroughs not yet recorded.
+- **Production keystore (human-owned):** release signing is configured and
+  locally proven (dev keystore), but a real keystore + CI secrets must be
+  provisioned to build a distributable signed AAB. Fail-closed by design.
 
 ## Definition of Release
 - All PASS rows cited to `docs/evidence/`.

@@ -20,7 +20,14 @@
 | 5 — Android gate | `assembleDebug` | `docs/evidence/2026-08-30_android_config_check.md` — `app-debug.apk` built (SDK 35, 4 ABIs, no INTERNET permission); FFmpegKit dependency fixed to a published artifact | ✅ Cited |
 | 6 — AI Studio cleanup | No Gemini/`@google/genai`/`metadata.json`/`.env.example` references | `rg` whole-repo returns no matches; `package.json`/`package-lock.json` pruned; web gates green (`docs/evidence/2026-08-31_sprint6_cleanup.md`) | ✅ Cited |
 | 6 — Sprint consolidation | One `docs/sprints/` folder, records 1–6 + active plan 7 | `docs/sprints/` contents at HEAD; root `sprints/` removed | ✅ Code exists |
-| 7 — Native hardening (PLAN) | Instrumented device tests + battery/autosave walkthroughs | Not yet executed — active plan only | ⚠️ Planned |
+| 7 — Test hardening & release config | Pure web batch/savings model (no fake numbers) | `src/lib/batch.ts`, `src/lib/batch.test.ts`; `npm test` 18 pass | ✅ Verified |
+| 7 — Test hardening & release config | Android JVM unit + instrumented tests written | `CompressionQualityUnitTest` runs green; `app/src/androidTest/...` compiles (`assembleDebugAndroidTest` SUCCESS) | ⚠️ Compiles; device run deferred to Sprint 8 |
+| 7 — Test hardening & release config | `BatchCompressionService.startBatch` wired into Media tab + savings surfaced | `ToolkitViewModel.startBatch`, `src/App.tsx` batch handler | ✅ Code exists + web tests |
+| 7 — Test hardening & release config | Production namespace `com.shrinkmedia.compressor` | `app/build.gradle.kts`, APK badging | ✅ Verified |
+| 7 — Test hardening & release config | R8-minified signed release APK/AAB | `apksigner verify` PASS (`app-release.apk`); `bundleRelease` → signed AAB (dev keystore); R8 seeds retain FFmpegKit + `CompressionQuality` | ✅ Verified (dev keystore) |
+| 7 — Test hardening & release config | Launcher icon + label, v0.2.1 | `res/mipmap-*`/`drawable`/`values/colors.xml`; manifest; aapt badging label | ✅ Verified |
+| 7 — Test hardening & release config | CI on Node-24 actions + signed release-AAB job | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7); release job fail-closed on secrets | ✅ Verified (YAML parses, build path validated) |
+| 8 — Device verification (PLAN) | Real-path instrumented suite on a device; battery/autosave walkthroughs | Not yet executed — final release gate | ⚠️ Planned |
 
 ## Rules That Keep This Honest
 

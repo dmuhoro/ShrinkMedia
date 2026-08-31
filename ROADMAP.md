@@ -2,7 +2,10 @@
 
 > Living roadmap. Every phase states its exit gate (a measured, evidencible
 > condition). A phase is not "done" on narrative alone (Constitution Article
-> VII). Capability status is tracked in `docs/current-state.md`.
+> VII). Capability status is tracked in `docs/current-state.md`. The step-by-step
+release path (with per-step status and exit gates) lives in
+`docs/release-roadmap.md`; the literal go/no-go table lives in
+`docs/release-readiness.md`.
 
 ## North Star
 
@@ -30,33 +33,36 @@ pause, PDF merge/split/build, and local text extraction.
 
 ## Phase 2 — Test Hardening & AICore Handoff (IN PROGRESS)
 
-Decide and record: local instrumentation tests for the real compression paths,
-a JVM-safe unit seam for `SettingsDataStore`, and the Android PDF text pipeline
-(mark parts ASPIRATIONAL that have no verified implementation yet).
+Local instrumentation tests for the real compression paths (written and
+compiling in Sprint 7 — JVM unit tests green), a JVM-safe unit seam for
+`SettingsDataStore`, and the Android PDF text pipeline (parts marked
+ASPIRATIONAL that have no verified implementation yet).
 
-- **Gate:** at least one instrumentation test exercising the actual
-  `compressImageFile` / `saveToPublicMediaStore` path on a device or emulator;
-  a plan for the AICore availability check (none of this ships inside the
-  6-hour window).
+- **Gate:** the real-path instrumented suite runs green on a device or emulator
+  (final **Sprint 8** verification gate); a plan for the AICore availability
+  check (none ships until a real implementation exists).
 
 ## Phase 3 — Simulator Discipline & Web Parity
 
 Make the web simulator a faithful, honest preview of the native behaviour —
-no implied features the Android app does not implement. Extract the pure
-helpers (compression ratio math, size formatting) into a testable lib module
-(already done), and add integration tests for the batch/undo/audit flows.
+no implied features the Android app does not implement. Pure helpers
+(compression ratio math, size formatting, batch/savings model) live in a
+testable lib module and are covered by unit tests.
 
 - **Gate:** every simulator control maps to a verified native capability;
-  simulator tests pass; the cross-reference in `docs/sprint-cross-reference.md`
-  lists no unverified claims.
+  simulator tests pass (18 green); the cross-reference in
+  `docs/sprint-cross-reference.md` lists no unverified claims.
 
-## Phase 4 — Release & Distribution
+## Phase 4 — Release & Distribution (IN PROGRESS)
 
-First signed `assembleRelease` build; AAB published to a closed track; release
-notes; `docs/release-readiness.md` fully PASS with citations.
+Production namespace `com.shrinkmedia.compressor`, R8-minified signed release
+APK/AAB build, launcher icon, and hardened CI with a signed release-AAB job
+are done (Sprint 7). Remaining: provision a real keystore, publish to a closed
+track, and complete the evidence-backed readiness table.
 
-- **Gate:** Play Console closed-track AAB with a signed release key and an
-  evidence-backed readiness table.
+- **Gate:** Play Console closed-track AAB built from a real signed release key;
+  `docs/release-readiness.md` fully PASS with citations (device verification
+  completed in Sprint 8).
 
 ## Out of Scope (explicitly descoped — do not re-include silently)
 

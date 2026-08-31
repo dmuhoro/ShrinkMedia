@@ -11,6 +11,8 @@
 | 2026-08-30 | Web simulator lint/test/build baseline | `2026-08-30_web_lint_test_build.md` | PASS |
 | 2026-08-30 | Engineering governance scaffold verification | `2026-08-30_governance_scaffold.md` | PASS |
 | 2026-08-30 | Android config self-check (wrapper + DSL) | `2026-08-30_android_config_check.md` | PASS |
+| 2026-08-31 | Sprint 6 cleanup & sprint consolidation | `2026-08-31_sprint6_cleanup.md` | PASS |
+| 2026-08-31 | Sprint 7 release config & test hardening | `2026-08-31_release-config_test-hardening.md` | PASS (device run blocked → Sprint 8) |
 
 ## Format
 

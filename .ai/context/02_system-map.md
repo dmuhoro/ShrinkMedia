@@ -40,6 +40,6 @@ Update when files move or modules split.
 | Path | Content |
 |---|---|
 | `docs/` | Constitution, adr/, decisions, current-state, architecture, evidence, runbooks, releases |
-| `docs/sprints/` | Sprint records (1–6) + active plan (7) |
+| `docs/sprints/` | Sprint records (1–7) + final-gate plan (8, device verification) |
 | `.ai/` | VERSION, agents/, context/ |
 | `.github/workflows/ci.yml` | Quality gates |

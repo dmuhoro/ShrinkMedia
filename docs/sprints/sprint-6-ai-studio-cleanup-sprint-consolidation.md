@@ -60,16 +60,20 @@ This made "what was done vs what is planned" impossible to audit.
 execution (first done to last done):
 1–5 stay as the executed history. Today's cleanup is recorded as **Sprint 6**.
 The former root `sprint_2_native_toolkit_hardening.md` becomes the **Sprint 7**
-active plan (Phase 2 test hardening). The stale root
+active plan (Phase 2 test hardening) — later split by re-sequencing into
+Sprint 7 (test hardening + release config, completed) and **Sprint 8**
+(device verification, the final gate). The stale root
 `sprint_1_engineering_governance_foundation.md` was dropped — it duplicated the
 Sprint 5 record under a misleading number. The root `sprints/` folder was
 deleted and every reference updated to `docs/sprints/`.
 
 **Files:**
 - Added: `docs/sprints/sprint-6-*.md` (this record),
-  `docs/sprints/sprint-7-native-toolkit-hardening.md` (active plan)
+  `docs/sprints/sprint-7-test-hardening-and-release-config.md` (record),
+  `docs/sprints/sprint-8-device-verification-final-gate.md` (final-gate plan)
 - Removed: `sprints/sprint_1_engineering_governance_foundation.md`,
-  `sprints/sprint_2_native_toolkit_hardening.md` (moved/re-numbered)
+  `sprints/sprint_2_native_toolkit_hardening.md` (moved/re-numbered),
+  `docs/sprints/sprint-7-native-toolkit-hardening.md` (renamed → sprint-8)
 - Updated references: `README.md`, `CONTRIBUTING.md`,
   `.ai/context/02_system-map.md`, `.ai/agents/builder-agent.md`,
   `docs/release-readiness.md`, `docs/sprint-cross-reference.md`,
@@ -92,5 +96,6 @@ deleted and every reference updated to `docs/sprints/`.
 ## Cross-Reference
 
 Constitution Article I (no false confidence), Article VI.7 (honesty);
-ADR-006 (web simulator harness); ROADMAP Phase 2 (next: Sprint 7);
+ADR-006 (web simulator harness); ROADMAP Phase 2 (next: Sprint 7/8 — test
+hardening then final device-verification gate)
 `docs/current-state.md` C2 (web simulator).
