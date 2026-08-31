@@ -3,7 +3,7 @@
 ## Goal
 
 Run the browser simulator locally, verify it against the quality gates, and
-produce a production bundle (deploy target: Vercel / AI Studio applet).
+produce a production bundle (deploy target: Vercel or any static host).
 
 ## Steps
 
@@ -45,9 +45,10 @@ npm run preview   # serve the production bundle locally to sanity-check
 
 ### 6. Env vars
 
-`GEMINI_API_KEY` and `APP_URL` are read from the environment at runtime
-(`.env.example` documents them). Never commit real values — `.env*` is
-gitignored except `.env.example`.
+The web simulator is a **pure static front-end** — it makes no network calls
+and reads no runtime secrets, so no env vars are required. The production
+bundle in `dist/` is fully self-contained and can be served by any static
+host.
 
 ## CI
 

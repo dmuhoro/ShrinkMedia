@@ -25,16 +25,16 @@ permission** — this is the structural control.
 |---|---|
 | Media exfiltration | No INTERNET permission; scoped-storage URIs only |
 | PII/name leaks | Audit surface is user-visible; no filenames in logs beyond it |
-| Secret commits | `.env*` gitignored (`.env.example` only); CI secret hygiene |
+| Secret commits | `.env` gitignored; no runtime secrets for the web simulator |
 | Silent data loss | Typed `null` results surfaced; autosave returns Boolean |
 | Batch drops | `isPaused` single source of truth; item never skipped |
 
 ## Secrets
-`GEMINI_API_KEY` / `APP_URL` are env-only, runtime-injected; never commit real
-values. Real key rotation: rotate immediately and rewrite history.
+The web simulator is a pure static front-end — it reads no runtime secrets.
+The native app and simulator never require API keys.
 
 ## Guard commands (auditor)
 ```bash
-rg -n "INTERNET|http://|https://" app/src/main/AndroidManifest.xml   # must be empty
+rg -n "android\.permission\.INTERNET" app/src/main/AndroidManifest.xml   # must be empty
 git check-ignore .env.local                                           # must match
 ```

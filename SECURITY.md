@@ -12,14 +12,14 @@ server, no database in the cloud, and no user data leaves the device.
 | User media (photos, videos, PDFs) | Device storage; read-only via scoped storage URIs | High — private user content |
 | Compressed output files | App cache / public MediaStore folders | Medium — derived from user media |
 | App settings (quality, autosave, theme, totals) | DataStore preferences on-device | Low |
-| `.env` contents (Gemini key, APP_URL for the web simulator) | Developer environment only | Medium — never committed |
+| Simulator source & build artifacts | Local checkout / `node_modules`, `dist` (gitignored) | Low |
 
 ### Threats
 
 | # | Threat | Vector | Existing control |
 |---|--------|--------|------------------|
 | T1 | User media exfiltrated to a remote service | Malicious/accidental network call from the app | Android manifest declares **no INTERNET permission**; ALL processing is in-process on-device |
-| T2 | Secrets committed to git | Developer copies `.env` into the repo | `.gitignore` excludes `.env*` (keeps `.env.example`); CI secret hygiene |
+| T2 | Secrets committed to git | Developer copies `.env` into the repo | `.gitignore` excludes `.env`; no runtime secrets exist for the web simulator |
 | T3 | Silent data loss (failed compression/autosave reported as success) | Defect in compression/autosave path | Typed `null` results on every conversion path; callers surface failures (AGENTS.md §1.4, §4) |
 | T4 | Batch dropped on pause/resume | Pause logic skip bug | `BatchCompressionPauseController.isPaused` single source of truth; queue never drops items |
 | T5 | Malicious apps reading output in public MediaStore folders | Shared storage exposure | Output written to app-private cache by default; user opt-in to public folders |
@@ -37,14 +37,15 @@ server, no database in the cloud, and no user data leaves the device.
 | Private (user media) | Photos, videos, PDFs | Never uploaded. Read via scoped-storage URIs with user-granted access only. |
 | Derived | Compressed files, audit logs | Written to app cache; moved to public MediaStore only when the user opts in. |
 | Settings | Quality presets, theme, totals | DataStore preferences; booleans default to `false`, quality to `MEDIUM`. |
-| Secrets | `GEMINI_API_KEY`, `APP_URL` | Environment-only; `.env*` is gitignored; never commit. |
+| Secrets | None — the web simulator has no runtime secrets | The sim is a pure static front-end; no API keys, no server |
 
 ## Secret Handling
 
-- `.env` / `.env.local` / `.env.production` are gitignored (`.env.example` is
-  the committed template with placeholder values).
-- Keys are injected at runtime in the AI Studio / dev environment; no real key
-  ever appears in the repository, CI logs, or evidence files.
+- The web simulator is a **pure static front-end**: it makes no network calls
+  and reads no runtime secrets, so there are no API keys or deploy-time env
+  vars to manage.
+- If a secret is ever introduced, it must be injected at runtime only — never
+  committed to the repo, CI logs, or evidence files.
 - If a key is ever committed, rotate it immediately and rewrite history.
 
 ## Vulnerability Reporting

@@ -37,7 +37,6 @@ npm run lint                         # tsc --noEmit
 npm test                             # Vitest
 npm run build && npm run preview     # dist + local preview
 ```
-Env: `GEMINI_API_KEY`, `APP_URL` at runtime only.
 
 ## CI
 `.github/workflows/ci.yml`: `npm ci → lint → test → build` (+ Android wrapper

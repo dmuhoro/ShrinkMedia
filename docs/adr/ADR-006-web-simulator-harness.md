@@ -9,7 +9,7 @@
 ShrinkMedia also carries a browser surface (Vite + React + TS + Tailwind) that
 mirrors the native toolkit's UI — a live simulator with a phone-frame preview,
 code tabs (`build.gradle.kts`, `BatchCompressionService`, `SettingsRepository`),
-batch/undo/audit flows, and a Gemini-driven helper (`@google/genai`).
+and batch/undo/audit flows. It is a pure static front-end with no AI backend.
 
 ## Decision
 
@@ -35,8 +35,8 @@ simulated feature must correspond to a verified native capability.
 
 - **Compose Multiplatform web target:** interesting but heavier tooling and no
   parity gain for a simulator.
-- **Native-only, no web surface:** loses the marketing/preview value the repo
-  origin intends (Google AI Studio applet).
+- **Native-only, no web surface:** loses the marketing/preview value of a
+  browser-ready simulator.
 
 ## Linking
 

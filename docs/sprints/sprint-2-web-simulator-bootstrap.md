@@ -10,7 +10,7 @@ simulates the compressor UI and exposes the native implementation as code tabs.
 | Vite dev/build toolchain | ✅ | `vite.config.ts`, `tsconfig.json`, `package.json` |
 | Phone-frame live preview + batch/undo/audit flows | ✅ | `src/App.tsx` |
 | Code tabs (gradle / service / datastore) | ✅ | `src/App.tsx` |
-| Gemini helper dependency, env template | ✅ | `package.json`, `.env.example` (placeholder keys only) |
+| Pure `src/lib/` helpers extracted for testability (Sprint 5) | ✅ | `src/lib/`, `npm test` |
 
 ## Part 1 — Simulator surface
 
