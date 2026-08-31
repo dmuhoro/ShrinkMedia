@@ -10,9 +10,11 @@ test/command/step — never narrative (Constitution Article VII).
 2. For compression claims, trace the **real** path: confirm the test or run
    exercised `compressImageFile` / `compressVideoFile` / the service loop —
    not a mirror helper alone (Article I.4).
-3. Grep the manifest: no `INTERNET` permission may appear (Article II.2):
+3. Grep the manifest: no `android.permission.INTERNET` may appear (Article
+   II.2). Match the permission declaration only — the mandatory XML namespace
+   (`http://schemas.android.com/apk/res/android`) must NOT trip the check:
    ```bash
-   rg -n "INTERNET|http://|https://" app/src/main/AndroidManifest.xml
+   rg -n "android\.permission\.INTERNET" app/src/main/AndroidManifest.xml
    ```
 4. Confirm no silent drops: every `null` from a conversion path must have a
    visible caller handling.

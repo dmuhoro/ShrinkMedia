@@ -70,8 +70,11 @@ jobs:
 
       - name: Manifest declares NO INTERNET permission
         run: |
-          if rg -n "INTERNET|http://|https://" app/src/main/AndroidManifest.xml; then
-            echo "FAIL: INTERNET/network surface present in manifest"
+          # android.permission.INTERNET is the real guard. The XML namespace
+          # http://schemas.android.com/apk/res/android is mandatory and must
+          # NOT trip this gate, so we match the permission declaration only.
+          if rg -n "android\.permission\.INTERNET" app/src/main/AndroidManifest.xml; then
+            echo "FAIL: android.permission.INTERNET present in manifest"
             exit 1
           fi
           echo "PASS: manifest declares no INTERNET permission"
