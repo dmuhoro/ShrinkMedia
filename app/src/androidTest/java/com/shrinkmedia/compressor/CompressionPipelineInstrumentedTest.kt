@@ -31,15 +31,20 @@ class CompressionPipelineInstrumentedTest {
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
 
     /**
-     * Write a solid-noise bitmap as an uncompressed BMP so the input byte size
-     * is deterministic and larger than any real JPEG compression of the scene.
+     * Write a solid-noise bitmap as a PNG. PNG is lossless and decodable by
+     * BitmapFactory on every Android device (unlike the synthetic BMP, which
+     * returned bounds w=-1/h=-1 on the API-36 test device), and a pure-noise
+     * scene stays larger than any real JPEG encoding of the same pixels — so the
+     * "output must be smaller than input" assertion is meaningful.
      */
-    private fun writeNoiseBitmapAsBmp(file: File, width: Int = 1024, height: Int = 1024) {
+    private fun writeNoiseBitmapAsPng(file: File, width: Int = 1024, height: Int = 1024) {
         val random = Random(42)
         val pixels = IntArray(width * height) { 0xFF000000.toInt() or random.nextInt(0xFFFFFF) }
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
-        BitmapCompressUtil.writeBmp(bitmap, file)
+        FileOutputStream(file).use { out ->
+            assertTrue("PNG encoding of the test input must succeed", bitmap.compress(Bitmap.CompressFormat.PNG, 100, out))
+        }
         bitmap.recycle()
     }
 
@@ -47,42 +52,46 @@ class CompressionPipelineInstrumentedTest {
         FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
     @Test
-    fun compressImageFile_runsTheRealPipeline_andProducesASmallerValidJpeg() = runBlocking {
-        val inputFile = File(context.cacheDir, "in_${System.currentTimeMillis()}.bmp")
-        writeNoiseBitmapAsBmp(inputFile)
+    fun compressImageFile_runsTheRealPipeline_andProducesASmallerValidJpeg() {
+        runBlocking {
+            val inputFile = File(context.cacheDir, "in_${System.currentTimeMillis()}.png")
+            writeNoiseBitmapAsPng(inputFile)
 
-        val inputSize = inputFile.length()
-        val output = compressImageFile(context, uriFor(inputFile), CompressionQuality.MEDIUM)
+            val inputSize = inputFile.length()
+            val output = compressImageFile(context, uriFor(inputFile), CompressionQuality.MEDIUM)
 
-        assertNotNull("real compression must return an output file", output)
-        val out = output!!
-        assertTrue("output must exist", out.exists())
-        assertTrue("output must be non-empty", out.length() > 0L)
-        assertTrue("output must be smaller than input ($inputSize -> ${out.length()})", out.length() < inputSize)
+            assertNotNull("real compression must return an output file", output)
+            val out = output!!
+            assertTrue("output must exist", out.exists())
+            assertTrue("output must be non-empty", out.length() > 0L)
+            assertTrue("output must be smaller than input ($inputSize -> ${out.length()})", out.length() < inputSize)
 
-        val decoded = android.graphics.BitmapFactory.decodeFile(out.absolutePath)
-        assertNotNull("output must be a decodable image", decoded)
-        assertTrue("output must have valid dimensions", decoded.width > 0 && decoded.height > 0)
-        decoded.recycle()
+            val decoded = android.graphics.BitmapFactory.decodeFile(out.absolutePath)
+            assertNotNull("output must be a decodable image", decoded)
+            assertTrue("output must have valid dimensions", decoded.width > 0 && decoded.height > 0)
+            decoded.recycle()
 
-        inputFile.delete()
-        out.delete()
+            inputFile.delete()
+            out.delete()
+        }
     }
 
     @Test
-    fun compressImageFile_returnsNull_forUnreadableOrNonImageContent() = runBlocking {
-        val bogus = File(context.cacheDir, "bogus_${System.currentTimeMillis()}.bin")
-        FileOutputStream(bogus).use { it.write(ByteArray(4096) { 0x41 }) }
+    fun compressImageFile_returnsNull_forUnreadableOrNonImageContent() {
+        runBlocking {
+            val bogus = File(context.cacheDir, "bogus_${System.currentTimeMillis()}.bin")
+            FileOutputStream(bogus).use { it.write(ByteArray(4096) { 0x41 }) }
 
-        val output = compressImageFile(context, uriFor(bogus), CompressionQuality.MEDIUM)
-        assertNull("non-decodable content must surface as null, never a bogus file", output)
-        bogus.delete()
+            val output = compressImageFile(context, uriFor(bogus), CompressionQuality.MEDIUM)
+            assertNull("non-decodable content must surface as null, never a bogus file", output)
+            bogus.delete()
+        }
     }
 
     @Test
     fun saveToPublicMediaStore_insertsIntoPublicGallery() {
         val outFile = File(context.cacheDir, "gallery_${System.currentTimeMillis()}.jpg")
-        writeNoiseBitmapAsBmp(outFile, 320, 240).let { }
+        writeNoiseBitmapAsPng(outFile, 320, 240)
         val saved = saveToPublicMediaStore(context, outFile, video = false)
         assertTrue("real media-store insert should succeed", saved)
         outFile.delete()

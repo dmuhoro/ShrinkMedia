@@ -38,6 +38,7 @@ class BatchPauseContractTest {
     @Test
     fun paused_gate_holds_the_worker_until_resumed() = runBlocking {
         coroutineScope {
+            controller.isPaused.value = true // arm the gate before the worker waits
             val worker = async(Dispatchers.Default) {
                 // The exact wait the production loop performs before each item.
                 controller.isPaused.first { paused -> !paused }
