@@ -18,6 +18,9 @@
 | 5 — Governance | Constitution/ADRs/sprints/evidence/CI | Files at HEAD | ✅ Code exists |
 | 5 — Web gates green | lint/test/build | `docs/evidence/2026-08-30_web_lint_test_build.md` | ✅ Cited |
 | 5 — Android gate | `assembleDebug` | `docs/evidence/2026-08-30_android_config_check.md` — `app-debug.apk` built (SDK 35, 4 ABIs, no INTERNET permission); FFmpegKit dependency fixed to a published artifact | ✅ Cited |
+| 6 — AI Studio cleanup | No Gemini/`@google/genai`/`metadata.json`/`.env.example` references | `rg` whole-repo returns no matches; `package.json`/`package-lock.json` pruned; web gates green (`docs/evidence/2026-08-31_sprint6_cleanup.md`) | ✅ Cited |
+| 6 — Sprint consolidation | One `docs/sprints/` folder, records 1–6 + active plan 7 | `docs/sprints/` contents at HEAD; root `sprints/` removed | ✅ Code exists |
+| 7 — Native hardening (PLAN) | Instrumented device tests + battery/autosave walkthroughs | Not yet executed — active plan only | ⚠️ Planned |
 
 ## Rules That Keep This Honest
 

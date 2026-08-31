@@ -4,6 +4,18 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.2.1 (2026-08-31)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| AI Studio / Gemini fingerprints removed repo-wide | PASS | `rg` returns no matches for `google ai studio\|aistudio\|gemini\|APP_URL\|GEMINI_API_KEY` on tracked files |
+| No AI Studio deps (`@google/genai`, `dotenv`, `express`) | PASS | `package.json`, `package-lock.json` |
+| Single sprint folder `docs/sprints/` ordered 1→7 | PASS | `docs/sprints/` contents; root `sprints/` removed |
+| Web simulator: `npm run lint` | PASS | `docs/evidence/2026-08-31_sprint6_cleanup.md` |
+| Web simulator: `npm test` (11 tests) | PASS | `docs/evidence/2026-08-31_sprint6_cleanup.md` |
+| Web simulator: `npm run build` | PASS | `docs/evidence/2026-08-31_sprint6_cleanup.md` |
+| CHANGELOG + sprint records updated | PASS | `CHANGELOG.md` v0.2.1; `docs/sprints/sprint-6-*`, `docs/sprints/sprint-7-*` |
+
 ## Gate: v0.2.0 (2026-08-30)
 
 | Item | Status | Evidence |
@@ -14,7 +26,7 @@
 | Android: `assembleDebug` green | PASS | `docs/evidence/2026-08-30_android_config_check.md` (`app-debug.apk` built) |
 | Android: no INTERNET permission in manifest | PASS | `docs/evidence/2026-08-30_android_config_check.md` — `rg INTERNET AndroidManifest.xml` returns no match; APK badging lists only foreground-service/notification permissions |
 | Governance scaffold complete | PASS | `docs/evidence/2026-08-30_governance_scaffold.md` |
-| CHANGELOG + sprint records updated | PASS | `CHANGELOG.md` v0.2.0; `docs/sprints/sprint-5-*`, `sprints/sprint_1_*`, `docs/sprint-cross-reference.md` |
+| CHANGELOG + sprint records updated | PASS | `CHANGELOG.md` v0.2.0; `docs/sprints/sprint-5-*`, `docs/sprints/sprint-6-*`, `docs/sprint-cross-reference.md` |
 
 ## History / Prior Releases
 

@@ -17,6 +17,14 @@ Mirror the table after every sprint close.
 
 ---
 
+## Gate v0.2.1
+
+| Item | Status |
+|---|---|
+| AI Studio / Gemini fingerprints removed | PASS — `rg` on tracked files returns no matches |
+| Single sprint folder `docs/sprints/` (1–6 + active plan 7) | PASS |
+| Web lint / test / build still green | PASS — `docs/evidence/2026-08-31_sprint6_cleanup.md` |
+
 ## Gate v0.2.0
 
 | Item | Status |

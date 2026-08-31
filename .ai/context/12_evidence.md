@@ -25,6 +25,7 @@ evidence.
 | Web lint/test/build baseline | `docs/evidence/2026-08-30_web_lint_test_build.md` |
 | Governance scaffold verify | `docs/evidence/2026-08-30_governance_scaffold.md` |
 | Android config self-check | `docs/evidence/2026-08-30_android_config_check.md` |
+| Sprint 6 cleanup + sprint consolidation | `docs/evidence/2026-08-31_sprint6_cleanup.md` |
 
 ## Entry format
 
