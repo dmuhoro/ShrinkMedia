@@ -64,4 +64,19 @@ class BatchPauseContractTest {
         controller.isPaused.value = false // the safe default after reset
         assertFalse("default must be not-paused (fail closed on default resume)", controller.isPaused.value)
     }
+
+    @Test
+    fun failure_audit_record_is_written_to_on_device_sandbox() {
+        // Constitution I.6: a file that fails must produce an audit record, never a
+        // silent drop. Exercise the exact production helper the service uses.
+        val ctx = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val log = BatchFailureAudit.logFile(ctx)
+        log.delete() // start clean so the assertion is meaningful
+        val reason = "compression produced no valid output"
+        BatchFailureAudit.writeLine(log, reason)
+        assertTrue("audit log file must exist in the app sandbox", log.exists())
+        val content = log.readText()
+        assertTrue("audit log must contain the failure reason", content.contains(reason))
+        assertTrue("audit log entry must be timestamped", Regex("\\[\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\]").containsMatchIn(content))
+    }
 }

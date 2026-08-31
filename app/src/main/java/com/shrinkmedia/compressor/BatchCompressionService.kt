@@ -28,6 +28,22 @@ object BatchCompressionPauseController {
     val isPaused = kotlinx.coroutines.flow.MutableStateFlow(false)
 }
 
+/** On-device audit trail for batch failures. Separated so instrumented tests can
+ *  prove an audit record is produced without weakening the production path that
+ *  calls it (Constitution I.6 + AGENTS.md SS1.4: "an audit record is produced"). */
+internal object BatchFailureAudit {
+    fun logFile(context: Context): java.io.File {
+        val dir = java.io.File(context.filesDir, "audit").apply { mkdirs() }
+        return java.io.File(dir, "batch-audit.log")
+    }
+
+    fun writeLine(logFile: java.io.File, entry: String) {
+        val ts = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+            .format(java.util.Date())
+        logFile.appendText("[$ts] $entry\n")
+    }
+}
+
 class BatchCompressionService : Service() {
 
     private val serviceJob = SupervisorJob()
@@ -126,6 +142,9 @@ class BatchCompressionService : Service() {
     ) {
         val total = uris.size
         var successCount = 0
+        var failedCount = 0
+        val failureReasons = ArrayList<String>()
+        val auditLog = acquireAuditLog()
 
         uris.forEachIndexed { index, uri ->
             BatchCompressionPauseController.isPaused.first { paused -> !paused }
@@ -138,44 +157,66 @@ class BatchCompressionService : Service() {
                 buildProgressNotification(current, total, statusText)
             )
 
-            // Execute compression step
+            // Execute compression step — a failure must be surfaced, never dropped
+            // (Constitution I.6): record the reason + audit line, then continue the
+            // batch instead of silently skipping.
             val quality = try {
                 CompressionQuality.valueOf(qualityName)
             } catch (e: Exception) {
                 CompressionQuality.MEDIUM
             }
 
-            val compressedFile: File? = if (isVideo) {
-                compressVideoFile(applicationContext, uri, quality)
-            } else {
-                compressImageFile(applicationContext, uri, quality)
+            val compressedFile: File? = try {
+                if (isVideo) {
+                    compressVideoFile(applicationContext, uri, quality)
+                } else {
+                    compressImageFile(applicationContext, uri, quality)
+                }
+            } catch (e: Exception) {
+                null.also { recordFailure(failureReasons, auditLog, uri, "compression threw: ${e.message ?: "unknown error"}") }
             }
 
-            if (compressedFile != null && compressedFile.exists() && compressedFile.length() > 0L) {
-                successCount++
-
-                val inputBytes = getFileSizeFromUri(applicationContext, uri)
-                val settingsRepo = SettingsRepository(applicationContext)
-                settingsRepo.recordCompressionSavings((inputBytes - compressedFile.length()).coerceAtLeast(0L))
-
-                // Respect live DataStore autoSaveToMediaStore preference during batch execution
-                val shouldAutoSave = try {
-                    settingsRepo.userSettingsFlow.first().autoSaveToMediaStore
-                } catch (e: Exception) {
-                    autoSave
+            when {
+                compressedFile == null || !compressedFile.exists() || compressedFile.length() <= 0L -> {
+                    recordFailure(failureReasons, auditLog, uri, "compression produced no valid output")
                 }
+                else -> {
+                    successCount++
 
-                if (shouldAutoSave) {
-                    saveToPublicMediaStore(applicationContext, compressedFile, isVideo)
+                    val inputBytes = getFileSizeFromUri(applicationContext, uri)
+                    val settingsRepo = SettingsRepository(applicationContext)
+                    settingsRepo.recordCompressionSavings((inputBytes - compressedFile.length()).coerceAtLeast(0L))
+
+                    // Respect live DataStore autoSaveToMediaStore preference during batch execution
+                    val shouldAutoSave = try {
+                        settingsRepo.userSettingsFlow.first().autoSaveToMediaStore
+                    } catch (e: Exception) {
+                        autoSave
+                    }
+
+                    if (shouldAutoSave) {
+                        val saved = try {
+                            saveToPublicMediaStore(applicationContext, compressedFile, isVideo)
+                        } catch (e: Exception) {
+                            false
+                        }
+                        if (!saved) recordFailure(failureReasons, auditLog, uri, "auto-save to gallery failed")
+                    }
                 }
             }
         }
+        failedCount = failureReasons.size
 
         // Finished Notification
+        val failureNote = if (failedCount > 0) {
+            " $failedCount failed (${failureReasons.joinToString("; ").take(200)})."
+        } else {
+            ""
+        }
         val finalNotification = NotificationCompat.Builder(this@BatchCompressionService, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-            .setContentTitle("Batch Compression Complete")
-            .setContentText("Successfully compressed $successCount of $total ${if (isVideo) "videos" else "images"}.")
+            .setSmallIcon(if (failedCount > 0) android.R.drawable.stat_sys_warning else android.R.drawable.stat_sys_upload_done)
+            .setContentTitle(if (failedCount > 0) "Batch compression finished with errors" else "Batch Compression Complete")
+            .setContentText("Successfully compressed $successCount of $total ${if (isVideo) "videos" else "images"}.$failureNote")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(createActivityPendingIntent())
@@ -184,6 +225,27 @@ class BatchCompressionService : Service() {
         notificationManager.notify(NOTIFICATION_ID + 1, finalNotification)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    /** On-device audit log for batch failures (Constitution I.6: "an audit record
+     *  is produced"). Lives inside the app sandbox — no INTERNET, no upload. */
+    private fun acquireAuditLog(): java.io.File = BatchFailureAudit.logFile(applicationContext)
+
+    private fun recordFailure(
+        reasons: MutableList<String>,
+        auditLog: java.io.File,
+        uri: Uri,
+        why: String
+    ) {
+        val label = try {
+            getFileNameFromUri(applicationContext, uri) ?: uri.lastPathSegment ?: "item"
+        } catch (e: Exception) {
+            uri.lastPathSegment ?: "item"
+        }
+        reasons += "$label: $why"
+        // Audit logging must never itself break the batch; a failure here still
+        // surfaces the reason via the in-memory list + completion notification.
+        runCatching { BatchFailureAudit.writeLine(auditLog, "$label: $why") }
     }
 
     private fun buildProgressNotification(current: Int, total: Int, message: String): Notification {
