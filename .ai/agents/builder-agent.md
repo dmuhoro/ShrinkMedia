@@ -18,7 +18,7 @@ Finish one layer (code + tests + docs) before starting the next.
 
 ## Inputs
 `docs/engineering/CONSTITUTION.md`, `AGENTS.md`, `docs/adr/`, the active sprint
-plan in `sprints/`.
+plan in `docs/sprints/`.
 
 ## Outputs
 Compilable, tested, evidenced code + docs updates + a `docs/evidence/` entry

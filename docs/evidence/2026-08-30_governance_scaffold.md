@@ -17,11 +17,14 @@ Structure on disk:
   `context/00_index.md` + `01`–`12`.
 - `docs/` → `engineering/CONSTITUTION.md`, `adr/` (README + ADR-001..008),
   `decisions.md`, `architecture.md`, `current-state.md`, `code-standards.md`,
-  `evidence/`, `release-readiness.md`, `runbooks/`, `sprints/sprint-1..5.md`,
+  `evidence/`, `release-readiness.md`, `runbooks/`, `sprints/sprint-1..7.md`,
   `sprint-cross-reference.md`.
-- `sprints/` → `sprint_1_engineering_governance_foundation.md`,
-  `sprint_2_native_toolkit_hardening.md`.
 - `.github/` → `workflows/ci.yml`, `CODEOWNERS`, 2 issue forms, PR template.
+
+> Note: as of Sprint 6 (2026-08-31) there is a single sprint folder,
+> `docs/sprints/`, holding records 1–6 plus the Sprint 7 active plan. The
+> former root `sprints/` folder (which held mis-numbered plan files) was
+> removed.
 
 Governance guardrail verified against the real boundary: the CI workflow
 fails the build if `AndroidManifest.xml` declares `android.permission.INTERNET`

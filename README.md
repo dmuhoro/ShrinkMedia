@@ -44,7 +44,6 @@ app/src/main/java/com/example/mediacompressor/
   BatchCompressionService.kt    Foreground batch service + pause controller
 src/                            Web simulator (Vite + React + TS + Tailwind)
 docs/                           Constitution, ADRs, sprints, evidence, runbooks
-sprints/                        Active sprint plans
 .ai/                            AI context + agent definitions
 .github/workflows/ci.yml        Quality gates
 ```
@@ -85,7 +84,8 @@ npm run build      # production bundle
 - **Constitution** — `docs/engineering/CONSTITUTION.md` (supreme authority).
 - **Operating rules** — `AGENTS.md`.
 - **Decisions** — `docs/adr/` (ADRs) and `docs/decisions.md`.
-- **Sprint records** — `docs/sprints/`; active plans in `sprints/`.
+- **Sprint records + active plans** — `docs/sprints/` (records 1–6; Sprint 7 is
+  the active plan).
 - **Evidence** — `docs/evidence/`; release gates in `docs/release-readiness.md`.
 - **Contribute** — `CONTRIBUTING.md` (all commits must be SSH-signed).
 

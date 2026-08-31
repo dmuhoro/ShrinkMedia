@@ -14,7 +14,6 @@ app/                      Android app (Kotlin, Jetpack Compose, Material 3)
     BatchCompressionService.kt  Foreground batch compression service
 src/                      Web simulator (Vite + React + TypeScript + Tailwind)
 docs/                     Governance, sprints, evidence, runbooks, architecture
-sprints/                  Active sprint plans
 .ai/                      AI context + agent definitions
 .github/workflows/        CI quality gates
 ```
@@ -23,7 +22,7 @@ sprints/                  Active sprint plans
 
 Before a task is started it must have: a stated scope, the file(s) it touches,
 the production entry point it protects (if it is a guard), and a verification
-step. See `sprints/` for the active plan format.
+step. See `docs/sprints/` for the sprint record + active plan format.
 
 ## Definition of Done (DoD)
 

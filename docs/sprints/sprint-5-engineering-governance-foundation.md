@@ -12,7 +12,7 @@ first green, tested web surface. **Status: IN PROGRESS** (this sprint).
 | ADRs 001–008 + decisions log | ✅ | `docs/adr/`, `docs/decisions.md` |
 | Architecture, current-state, standards, runbooks | ✅ | `docs/` |
 | Sprint records 1–5 + cross-reference | ✅ | `docs/sprints/` |
-| Active sprint plans | ✅ | `sprints/` |
+| Active sprint plans | ✅ | `docs/sprints/sprint-7-*` (Sprint 6 consolidated all sprints here) |
 | Evidence log | ✅ | `docs/evidence/` |
 | AI context + agents (`.ai/`) | ✅ | `.ai/` |
 | CI workflow + PR/issue templates | ✅ | `.github/` |
