@@ -4,6 +4,20 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.3.0 OCR + no-silent-drops hardening (2026-08-31, Sprint 9)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| On-device OCR implemented (ML Kit, no INTERNET) | PASS (code) | ADR-009; `OcrHelper.kt`; `AiTab` Scan-reader card; R8 seeds/usage keep ML Kit (`app/build/outputs/mapping/release/*.txt`) |
+| OCR compile + unit test + assembleDebug | PASS | `compileDebugKotlin`, `testDebugUnitTest`, `assembleDebug` exit 0 (this session, commit `36bcfab`) |
+| OCR minification (release R8) keeps ML Kit + OcrHelper | PASS | `minifyReleaseWithR8` BUILD SUCCESSFUL; seeds.txt (mlkit registrar/provider/dynamite) + usage.txt (OcrHelper) |
+| Web-sim `GRADLE_CODE` reflects ML Kit dep (parity) | PASS | `src/App.tsx` snippet edited + committed `85f1e9e`; `npm run lint`/`test`(18)/`build` green |
+| Batch no-silent-drops: per-file failure surfacing + on-device audit log | PASS (code) | `BatchFailureAudit` + completion-notification reason summary; commit `9b26f57` |
+| No-silent-drops: compile + unit + assembleDebug | PASS | `compileDebugKotlin`, `compileDebugAndroidTestKotlin`, `testDebugUnitTest`, `assembleDebug` all exit 0 |
+| No-silent-drops: release R8 minify | PASS | `minifyReleaseWithR8` BUILD SUCCESSFUL (this session) |
+| Instrumented audit test written (compiles) | PASS | `failure_audit_record_is_written_to_on_device_sandbox` (`BatchPauseContractTest.kt`); **execution = Sprint 8 device gate** |
+| Manifest still declares no INTERNET permission | PASS | `rg INTERNET AndroidManifest.xml` no match (see v0.2.1 gate) |
+
 ## Gate: v0.2.1 → release hardening (2026-08-31, Sprint 7)
 
 | Item | Status | Evidence |
@@ -63,6 +77,9 @@
    hardware. Battery-pause and autosave walkthroughs are not yet recorded.
    This is the last step before any store release — nothing is claimed
    "shipped on device" until these rows flip to PASS with citations.
+   A physical API-36 device is connected (`49IZ6DJ7SONNQOBE`) but `adb install`
+   returns `INSTALL_FAILED_USER_RESTRICTED` (MIUI requires "Install via USB"
+   enabled in Developer Options — the `WRITE_SECURE_SETTINGS` bypass is denied).
 3. **Production keystore (human-owned):** release signing is configured and
    locally proven with a throwaway dev keystore, but a real keystore must be
    provisioned (gitignored `keystore.properties` + CI `STORE_*`/`KEY_*` secrets)
@@ -75,3 +92,6 @@
 - [ ] No FAIL rows without a documented descope decision (`docs/decisions.md`).
 - [ ] `CHANGELOG.md` and active sprint plan(s) reflect the release.
 - [ ] Sprint 8 device-verification gate rows flip from `⚠️`/`BLOCKED` to PASS.
+- [ ] OCR + no-silent-drops gate (above): code rows hold with citations; the two
+      "device run pending" instrumented rows flip to PASS once the MIUI install
+      gate is lifted and the suite runs on hardware.

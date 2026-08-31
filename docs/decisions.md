@@ -53,6 +53,8 @@ would desync progress from the actual queue.
 
 - **Why no INTERNET permission?** The privacy invariant is structural, not
   aspirational (Constitution Article II).
-- **Why is OCR ASPIRATIONAL?** Extracting text from scans needs a real local
-  OCR engine ("tess") which is not yet wired; claiming otherwise would be false
-  confidence.
+- **What happened to "OCR is ASPIRATIONAL"?** Originally true (no local engine
+  wired, D001 FAQ). It is now **implemented** via ADR-009 — on-device ML Kit
+  `text-recognition`, typed-null `OcrHelper`, no INTERNET — superseding that
+  note. It still awaits the Sprint 8 device run for full verification. AICore
+  handoff remains ASPIRATIONAL and is staged as v2 (ADR-010).

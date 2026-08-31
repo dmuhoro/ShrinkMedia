@@ -37,13 +37,14 @@
 | 9 | CI off deprecated Node-20 actions + signed release-AAB job | Governance/CI | ✅ | Workflow YAML parses; release job gated fail-closed on secrets (Sprint 7) |
 | 10 | Device verification — final gate | Test/QA | 🔵 | Instrumented suite green on API 24–35; battery-pause walkthrough (0 dropped); autosave verified; evidence filed (Sprint 8) |
 | 11 | Real keystore + Play Console AAB to a closed track | Release | 🔵 | Human-owned: provision production keystore, upload signed AAB, record track | 
-| 12 | AICore device-model handoff + OCR | AI | 🟡 | ASPIRATIONAL — no AICore dep, no OCR engine. Requires ADR before wiring (D001) |
+| 12 | AICore device-model handoff + OCR | AI | 🟡 | AICore still ASPIRATIONAL/staged v2 (ADR-010). **OCR implemented** (ADR-009: ML Kit) — flies with step 10's device run |
 
 ## What Is NOT On This Roadmap
 
 - Any networked/cloud compression (violates the on-device invariant).
-- OCR for scanned images until a real local engine exists (ASPIRATIONAL).
 - iOS/desktop ports before Phases 1–3 are verified.
+- Google-Tools Bridge (Drive/Docs/cloud-Gemini) — deliberately staged OUT of v1
+  as opt-in connected mode (ADR-010); the on-device default stays fail-closed.
 
 ## Current Outstanding Blocker(s)
 
@@ -53,8 +54,9 @@
 2. **Production keystore (step 11):** human-owned. The build is configured to
    read a gitignored `keystore.properties`; a real keystore must be provisioned
    and its secrets added to CI to produce a distributable signed AAB.
-3. **AICore/OCR (step 12):** intentionally descoped until a real implementation
-   and availability check exist (ADR/D001).
+3. **AICore handoff (step 12):** intentionally staged out of v1 (ADR-010); the
+   connected mode requires an ADR + INTERNET capability change. OCR (ADR-009)
+   is no longer a blocker — it ships with step 10's device run.
 
 ## Definition of "Release-Ready"
 

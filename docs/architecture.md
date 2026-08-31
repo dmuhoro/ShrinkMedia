@@ -69,12 +69,14 @@ the UI.
 ## Known Gaps
 
 - **No instrumentation tests on a device yet** (JVM-verified helpers exist).
-- **OCR / AICore handoff** is ASPIRATIONAL — `AiTab` describes it, nothing
-  ships.
+- **AICore handoff** is ASPIRATIONAL — `AiTab` describes it, nothing ships
+  (staged v2, ADR-010). **OCR is implemented** (ADR-009: ML Kit via
+  `OcrHelper`, typed-null, no INTERNET) pending the Sprint 8 device run.
 - **Web simulator** compresses with simulated numbers — it previews native
   behaviour, it does not reprocess real bytes (ADR-006).
 - History/audit detail lives in the in-memory UI list; only cumulative totals
-  persist in DataStore.
+  persist in DataStore. Batch **failures** now also write a timestamped audit
+  line to the app-sandbox `batch-audit.log` (BatchFailureAudit, on-device).
 
 ## Evolution Rules
 
