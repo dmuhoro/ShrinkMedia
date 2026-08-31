@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,10 +16,10 @@ jobs:
     name: Web (lint · test · build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -36,37 +37,93 @@ jobs:
         run: npm run build
 
   android:
-    name: Android (assembleDebug)
+    name: Android (assembleDebug + JVM unit + androidTest compile)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Gradle wrapper cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
+      - name: Local JVM unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Compile instrumentation test APK
+        run: ./gradlew assembleDebugAndroidTest --no-daemon
+
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+  release:
+    name: Android release AAB (signed)
+    runs-on: ubuntu-latest
+    # This job is a hard fail-closed release gate: it only runs when the signing
+    # secrets are present AND the branch is main. Without secrets the release
+    # build cannot be signed, so we skip rather than emit an unsigned artifact.
+    if: github.ref == 'refs/heads/main' &&
+        secrets.STORE_FILE != '' &&
+        secrets.STORE_PASSWORD != '' &&
+        secrets.KEY_ALIAS != '' &&
+        secrets.KEY_PASSWORD != ''
+    needs: [web, android]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle wrapper cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.gradle/caches
+          key: gradle-release-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Materialize signing keystore + properties
+        run: |
+          # keystore.properties and *.jks are gitignored; the keystore bytes are
+          # provided as a GitHub secret (base64). Recreate both only in CI.
+          echo "$STORE_FILE" | base64 --decode > keystore.jks
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "keystore.jks" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" \
+            > keystore.properties
+        env:
+          STORE_FILE: ${{ secrets.STORE_FILE }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build signed release AAB
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Upload signed release AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
 
   governance:
     name: Governance guardrails
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Manifest declares NO INTERNET permission
         run: |
