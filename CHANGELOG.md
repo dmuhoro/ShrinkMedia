@@ -5,7 +5,51 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
-## [0.2.1] — 2026-08-31
+## [0.3.0] — 2026-08-31
+
+Real on-device OCR, honest batch failure surfacing, and the hardware-verified
+release gate. Adds local text recognition via ML Kit (no INTERNET), surfaces
+every per-file batch failure with an on-device audit record, and proves the
+native engine green on an API-36 phone.
+
+### Added
+- **On-device OCR** (ADR-009): `OcrHelper` (typed-null `recognizeText`, bounded
+  decode) + ML Kit `com.google.mlkit:text-recognition:16.0.1` +
+  `com.google.mlkit.vision.text.latin.TextRecognizerOptions`. New `AiTab`
+  "Scan reader (OCR)" card explicitly distinguishing success / empty /
+  no-text / failure (no silent drops). R8 keeps ML Kit (`seeds.txt`/`usage.txt`).
+- **Google Tools Bridge planning ADR (ADR-010)** staging Drive/Docs/
+  cloud-Gemini OUT of v1 as opt-in connected mode; AICore stays ASPIRATIONAL;
+  `docs/ideas.md` I001.
+- **Batch no-silent-drops audit** (Article I.6): `BatchFailureAudit` writes a
+  timestamped `batch-audit.log` in the app sandbox; the completion notification
+  now reports count + reason summary and a warning icon on any failure.
+- **Device-verification evidence** (`docs/evidence/2026-08-31_device_verification.md`)
+  and Sprint 8/9 records; Sprint 8 promoted to EXECUTED.
+- **New instrumented test** `failure_audit_record_is_written_to_on_device_sandbox`.
+
+### Changed
+- **Sprint 8 device gate → PASS.** `connectedDebugAndroidTest` is green: 8/8
+  tests on Xiaomi `25078RA3EA` (API 36) covering real compression, fail-closed
+  null, gallery autosave, battery-pause (never drops), DataStore savings, and
+  the audit record.
+- **Web-sim `GRADLE_CODE` parity** now lists the ML Kit dependency.
+- State docs (`current-state.md`, `architecture.md`, `decisions.md`,
+  `release-roadmap.md`, `release-readiness.md`) reflect C12 implemented, C11
+  staged v2, C16/C17 added.
+
+### Fixed
+- **Three genuine instrumented-test defects** surfaced by the first device run
+  (correctly fixed, not weakened): the pause-gate test now arms `isPaused=true`,
+  two `@Test` methods are void (JUnit `InvalidTestClassError`), and the
+  real-compression test input is a lossless PNG (decodeable on-device) instead
+  of a synthetic BMP that API 36's `BitmapFactory` can't read (bounds w=-1/h=-1).
+
+### Note
+- OCR code is implemented and R8-verified but a full end-to-end OCR walkthrough
+  on a text image is recorded in a follow-up device run; the ML Kit model is
+  downloaded on first use in the app sandbox (tech-transfer only, still
+  on-device, no INTERNET permission required by the app manifest).
 
 Housekeeping + release-hardening release: removed the inherited Google AI Studio/
 Gemini artifacts, consolidated the sprint documentation into a single,
