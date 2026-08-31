@@ -22,7 +22,7 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C9 | PDF build / merge / split / metrics | ⚠️ | `android.graphics.pdf`; **device run Sprint 8** |
 | C10 | PDF embedded-text extraction | ⚠️ | Heuristic; scanned PDFs report "needs OCR" honestly; **device run Sprint 8** |
 | C11 | AICore device-model handoff | **ASPIRATIONAL** | `AiTab` placeholder only — no AICore dependency, no availability check (D001); staged as v2 (ADR-010) |
-| C12 | Real OCR (scanned PDFs/images) | ⚠️ | Implemented (ADR-009): ML Kit `text-recognition` via `OcrHelper` (typed-null, no INTERNET), `AiTab` "Scan reader" card; R8-verified; **device run Sprint 8** |
+| C12 | Real OCR (scanned PDFs/images) | ✅ | Implemented (ADR-009): ML Kit `text-recognition` via `OcrHelper` (typed-null, no INTERNET), `AiTab` "Scan reader"; **device walkthrough PASS** (reads "SHRINKMEDI" on API 36); R8-verified |
 | C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.2.1) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`), `apksigner verify` PASS on `app-release.apk`; `bundleRelease` → signed AAB (dev keystore); production keystore is human-owned |
 | C14 | Android instrumentation tests **written** (JVM + instrumented) | ⚠️ | JVM unit tests run green; instrumented APK compiles; **execution on device = Sprint 8** |
 | C15 | CI hardened to Node-24 actions + signed release-AAB job | ✅ | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7, fail-closed release job) |
@@ -41,8 +41,8 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
   record it in `docs/evidence/`.
 - **Nothing under C11 may be claimed as delivered.** It remains ASPIRATIONAL
   until implemented **and** verified (staged v2, ADR-010). C12 OCR is
-  implemented but still awaits the Sprint 8 device run before it is marked fully
-  verified.
+  implemented **and** device-verified (reads "SHRINKMEDI" on API 36;
+  `docs/evidence/2026-08-31_device_verification.md`).
 - **Release signing is configured and locally proven, but the production
   keystore is a human-owned blocker.** The build fails closed (no unsigned
   artifact) until a real keystore is provided.

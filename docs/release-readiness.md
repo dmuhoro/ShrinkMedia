@@ -15,9 +15,11 @@
 | Battery-pause gate on device: queue never drops an item | PASS | `paused_gate_holds_the_worker_until_resumed` on API 36 (`docs/evidence/2026-08-31_device_verification.md`) |
 | On-device DataStore savings monotonic + negative clamp | PASS | `recordCompressionSavings_*` on API 36 (`docs/evidence/2026-08-31_device_verification.md`) |
 | On-device audit record for batch failures (Article I.6) | PASS | `failure_audit_record_is_written_to_on_device_sandbox` on API 36 (`docs/evidence/2026-08-31_device_verification.md`) |
-| On-device OCR implemented (ML Kit, no INTERNET) | PASS (code) | ADR-009; `OcrHelper.kt`; `AiTab` Scan-reader card; R8 seeds/usage keep ML Kit (`app/build/outputs/mapping/release/*.txt`) |
+| On-device OCR implemented (ML Kit, no INTERNET) | PASS | ADR-009; `OcrHelper.kt`; `AiTab` Scan-reader card; R8 seeds/usage keep ML Kit (`app/build/outputs/mapping/release/*.txt`) |
+| **On-device OCR device walkthrough** (real `OcrHelper`, API 36) | PASS | `OcrInstrumentedTest.recognizeText_readsLargeHighContrastText_onDevice` reads "SHRINKMEDI" from "ShrinkMedia"; `docs/evidence/2026-08-31_device_verification.md` |
 | OCR compile + unit test + assembleDebug | PASS | `compileDebugKotlin`, `testDebugUnitTest`, `assembleDebug` exit 0 (this session, commit `36bcfab`) |
 | OCR minification (release R8) keeps ML Kit + OcrHelper | PASS | `minifyReleaseWithR8` BUILD SUCCESSFUL; seeds.txt (mlkit registrar/provider/dynamite) + usage.txt (OcrHelper) |
+| **OCR bounds-decode production bug fixed** (device-found) | PASS | Commit `3b5c134` (`decodeBounded` no longer returns null on bounds-only decode) + device re-verify |
 | Web-sim `GRADLE_CODE` reflects ML Kit dep (parity) | PASS | `src/App.tsx` snippet edited + committed `85f1e9e`; `npm run lint`/`test`(18)/`build` green |
 | Batch no-silent-drops: per-file failure surfacing + on-device audit log | PASS (code) | `BatchFailureAudit` + completion-notification reason summary; commit `9b26f57` |
 | No-silent-drops: compile + unit + assembleDebug | PASS | `compileDebugKotlin`, `compileDebugAndroidTestKotlin`, `testDebugUnitTest`, `assembleDebug` all exit 0 |

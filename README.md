@@ -14,7 +14,7 @@
 | Foreground batch service (battery-aware) | `docs/current-state.md` | ✅ Implemented & **device-verified** (queue never drops) |
 | DataStore settings persistence | `docs/current-state.md` | ✅ Implemented & **device-verified** |
 | PDF merge / split / build / text extract | `docs/current-state.md` | ✅ Implemented |
-| On-device OCR (ML Kit, scanned text) | `docs/current-state.md` | ✅ Implemented (code + R8 verified; end-to-end text-image walkthrough pending) |
+| On-device OCR (ML Kit, scanned text) | `docs/current-state.md` | ✅ Implemented & **device-verified** (reads "SHRINKMEDI" on API 36) |
 | Batch failure surfacing + on-device audit log | `docs/current-state.md` | ✅ Implemented & **device-verified** |
 | Web simulator (Vite + React + TS) | `docs/current-state.md` | ✅ Implemented & verified |
 | AICore local-model handoff | `docs/current-state.md` | ⚠️ ASPIRATIONAL (staged v2, ADR-010) |

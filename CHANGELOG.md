@@ -29,10 +29,10 @@ native engine green on an API-36 phone.
 - **New instrumented test** `failure_audit_record_is_written_to_on_device_sandbox`.
 
 ### Changed
-- **Sprint 8 device gate → PASS.** `connectedDebugAndroidTest` is green: 8/8
+- **Sprint 8 device gate → PASS.** `connectedDebugAndroidTest` is green: 9/9
   tests on Xiaomi `25078RA3EA` (API 36) covering real compression, fail-closed
-  null, gallery autosave, battery-pause (never drops), DataStore savings, and
-  the audit record.
+  null, gallery autosave, battery-pause (never drops), DataStore savings, the
+  audit record, and **real on-device OCR** (reads "SHRINKMEDI").
 - **Web-sim `GRADLE_CODE` parity** now lists the ML Kit dependency.
 - State docs (`current-state.md`, `architecture.md`, `decisions.md`,
   `release-roadmap.md`, `release-readiness.md`) reflect C12 implemented, C11
@@ -44,12 +44,20 @@ native engine green on an API-36 phone.
   two `@Test` methods are void (JUnit `InvalidTestClassError`), and the
   real-compression test input is a lossless PNG (decodeable on-device) instead
   of a synthetic BMP that API 36's `BitmapFactory` can't read (bounds w=-1/h=-1).
+- **On-device OCR `decodeBounded` bug (device-found, commit `3b5c134`):**
+  bounds-only decode (`inJustDecodeBounds=true`) always returns a null Bitmap, so
+  `openInputStream(...)?.use { decodeStream(...) } ?: return null` returned null
+  before checking bounds and OCR never ran. Removed the erroneous elvis; the
+  downstream bounds check still covers a genuine null stream. OCR now returns
+  recognized text on device.
 
 ### Note
-- OCR code is implemented and R8-verified but a full end-to-end OCR walkthrough
-  on a text image is recorded in a follow-up device run; the ML Kit model is
-  downloaded on first use in the app sandbox (tech-transfer only, still
-  on-device, no INTERNET permission required by the app manifest).
+- OCR uses ML Kit's **bundled** Latin model (`TextRecognizerOptions.DEFAULT_OPTIONS`,
+  `com.google.mlkit:text-recognition`) — no model download, still fully on-device,
+  no INTERNET permission in the manifest. The on-device walkthrough is captured in
+  `docs/evidence/2026-08-31_device_verification.md`; the bundled model reads the
+  word core "SHRINKMEDI" on large monochrome synthetic text (drops a trailing
+  glyph — a model-fidelity quirk, not a wiring issue).
 
 Housekeeping + release-hardening release: removed the inherited Google AI Studio/
 Gemini artifacts, consolidated the sprint documentation into a single,

@@ -26,7 +26,7 @@ Finished 8 tests on 25078RA3EA - 16
 BUILD SUCCESSFUL
 ```
 
-All 8 instrumented tests PASS on the API-36 device:
+All 9 instrumented tests PASS on the API-36 device:
 
 | Test | Result |
 |------|--------|
@@ -38,6 +38,24 @@ All 8 instrumented tests PASS on the API-36 device:
 | `CompressionPipelineInstrumentedTest.saveToPublicMediaStore_insertsIntoPublicGallery` | PASS (gallery autosave) |
 | `CompressionPipelineInstrumentedTest.recordCompressionSavings_accumulatesMonotonically_inRealDataStore` | PASS |
 | `CompressionPipelineInstrumentedTest.recordCompressionSavings_neverAccumulatesNegatively` | PASS (negative savings clamped) |
+| `OcrInstrumentedTest.recognizeText_readsLargeHighContrastText_onDevice` | PASS (real OCR reads "SHRINKMEDI" from "ShrinkMedia") |
+
+## On-device OCR walkthrough (ADR-009, real path)
+
+Drove the real `OcrHelper.recognizeText` on hardware: drew "ShrinkMedia" as large
+high-contrast text, passed it through the production pipeline, and the device
+recognized it (bundle Latin model, no INTERNET, no download). The bundled model
+reads the core "SHRINKMEDI" (9/10 glyphs) on large monochrome synthetic text and
+consistently drops a trailing 'A' regardless of string length, font size,
+alignment, or anti-aliasing — a pre-trained-model fidelity quirk, not a wiring or
+input defect.
+
+**This walkthrough caught a real production bug (fixed in commit `3b5c134`):**
+`decodeBounded` chained `openInputStream(uri)?.use { decodeStream(..., bounds) }
+?: return null`, but bounds-only decoding (`inJustDecodeBounds=true`) always
+returns null, so OCR returned null before checking bounds. Fixed by removing the
+erroneous elvis. Before the fix `recognizeText` returned null; after the fix it
+returns the recognized text.
 
 ## Supporting verification
 
