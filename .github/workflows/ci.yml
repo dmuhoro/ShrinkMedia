@@ -88,4 +88,5 @@ jobs:
           echo "PASS: no real .env files tracked"
 
       - name: Evidence exists for current sprint
-        run: test -d docs/evidence && echo "PASS: evidence log present"
+        run: |
+          test -d docs/evidence && echo "PASS: evidence log present"
