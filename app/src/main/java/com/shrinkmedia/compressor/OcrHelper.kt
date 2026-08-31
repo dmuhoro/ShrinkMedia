@@ -69,10 +69,13 @@ object OcrHelper {
     }
 
     private fun decodeBounded(context: Context, uri: Uri): Bitmap? {
+        // NOTE: bounds-only decode (inJustDecodeBounds) always returns a null
+        // Bitmap — it only fills `bounds`. Do NOT `?: return null` on that null
+        // return, or OCR never runs (found on-device during device verification).
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         context.contentResolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, bounds)
-        } ?: return null
+        }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
         var sample = 1
