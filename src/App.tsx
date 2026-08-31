@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { compressionRatio, reductionPercent } from './lib/compression';
 import { formatBytes } from './lib/format';
+import { buildBatchResults, accumulateSavings } from './lib/batch';
 
 const GRADLE_CODE = `plugins {
     id("com.android.application")
@@ -674,7 +675,10 @@ export default function App() {
     const queueToProcess = [...pendingBatchQueue];
     const batchTotal = queueToProcess.length;
     const selectedPreset = isVideo ? videoQuality : imageQuality;
-    const ratio = compressionRatio(selectedPreset);
+
+    // Honest result set derived from the real queued file sizes (parity with native).
+    const results = buildBatchResults(queueToProcess, selectedPreset);
+    const totalSaved = accumulateSavings(results).savedBytes;
 
     setIsLoading(true);
     setBatchProgress({ current: 1, total: batchTotal });
@@ -687,9 +691,7 @@ export default function App() {
     setFileProgressPercent(0);
 
     const interval = setInterval(() => {
-      const currentQueueItem = queueToProcess[step - 1];
-      const dummyOriginal = currentQueueItem.size;
-      const dummyCompressed = Math.round(dummyOriginal * ratio);
+      const currentResultItem = results[step - 1];
       const duration = isVideo ? Math.round(1800 + Math.random() * 800) : Math.round(350 + Math.random() * 200);
 
       const targetBitrate = isVideo
@@ -702,9 +704,9 @@ export default function App() {
 
       const newItem: CompressionItem = {
         id: `${Date.now()}_${step}`,
-        name: currentQueueItem.name,
-        originalSize: dummyOriginal,
-        compressedSize: dummyCompressed,
+        name: currentResultItem.name,
+        originalSize: currentResultItem.originalSize,
+        compressedSize: currentResultItem.compressedSize,
         type: isVideo ? 'video' : 'image',
         timeTakenMs: duration,
         savedToMediaStore: autoSaveMediaStore,
@@ -713,7 +715,7 @@ export default function App() {
 
       batchItems.unshift(newItem);
 
-      // Add to audit log with full compression parameters
+      // Add to audit log with the honest computed parameters
       setAuditLogs(prev => [
         {
           id: newItem.id,
@@ -721,7 +723,7 @@ export default function App() {
           mediaType: isVideo ? 'VIDEO' : 'IMAGE',
           originalSize: newItem.originalSize,
           compressedSize: newItem.compressedSize,
-          reductionPercent: reductionPercent(dummyOriginal, dummyCompressed),
+          reductionPercent: currentResultItem.reductionPercent,
           durationMs: duration,
           qualityPreset: selectedPreset.toUpperCase(),
           targetBitrate,
@@ -745,8 +747,8 @@ export default function App() {
         setCurrentResult(batchItems[0]);
         setRecentItems(prev => [...batchItems, ...prev].slice(0, 20));
         triggerHaptic();
-        setStatusMessage(`Foreground batch completed: ${batchTotal} items compressed!${autoSaveMediaStore ? ` Saved to public ${isVideo ? 'Movies' : 'Pictures'} gallery.` : ''}`);
-        showSnackbar(`Foreground Service completed: ${batchTotal} files processed.`);
+        setStatusMessage(`Foreground batch completed: ${batchTotal} items compressed — ${formatBytes(totalSaved)} recovered!${autoSaveMediaStore ? ` Saved to public ${isVideo ? 'Movies' : 'Pictures'} gallery.` : ''}`);
+        showSnackbar(`Foreground Service completed: ${batchTotal} files processed — ${formatBytes(totalSaved)} recovered.`);
       }
     }, 900);
   };
