@@ -12,6 +12,18 @@ release gate. Adds local text recognition via ML Kit (no INTERNET), surfaces
 every per-file batch failure with an on-device audit record, and proves the
 native engine green on an API-36 phone.
 
+### Release & Distribution (v0.3.0, production keystore)
+- **Production keystore generated** (`~/.android/keystores/shrinkmedia-release.jks`,
+  PKCS12, 2048-bit RSA, SHA256withRSA, 10,000-day validity, alias `shrinkmedia`).
+  Kept **outside the repo**; `keystore.properties` (repo root, **gitignored**)
+  drives the release `SigningConfig` and fails closed if absent.
+- **Signed release APK** `app-release.apk`: `versionName 0.3.0`, `versionCode 3`,
+  `applicationId com.shrinkmedia.compressor`, R8-minified;
+  `apksigner verify` PASS (cert SHA-256 `21569322706156fe...` — matches keystore).
+- **Distribution:** direct APK sideload via a GitHub Release (`v0.3.0`). Not the
+  Play route (per user decision). Signed APK installs + launches on API-36.
+- Evidence: `docs/evidence/2026-08-31_v0.3.0_signed_release.md`.
+
 ### Added
 - **On-device OCR** (ADR-009): `OcrHelper` (typed-null `recognizeText`, bounded
   decode) + ML Kit `com.google.mlkit:text-recognition:16.0.1` +

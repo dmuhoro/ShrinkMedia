@@ -23,12 +23,12 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C10 | PDF embedded-text extraction | ⚠️ | Heuristic; scanned PDFs report "needs OCR" honestly; **device run Sprint 8** |
 | C11 | AICore device-model handoff | **ASPIRATIONAL** | `AiTab` placeholder only — no AICore dependency, no availability check (D001); staged as v2 (ADR-010) |
 | C12 | Real OCR (scanned PDFs/images) | ✅ | Implemented (ADR-009): ML Kit `text-recognition` via `OcrHelper` (typed-null, no INTERNET), `AiTab` "Scan reader"; **device walkthrough PASS** (reads "SHRINKMEDI" on API 36); R8-verified |
-| C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.2.1) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`), `apksigner verify` PASS on `app-release.apk`; `bundleRelease` → signed AAB (dev keystore); production keystore is human-owned |
+| C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.3.0) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`); `apksigner verify` PASS on `app-release.apk` **signed with the production keystore** (`~/.android/keystores/shrinkmedia-release.jks`, gitignored `keystore.properties`); distributed via GitHub sideload |
 | C14 | Android instrumentation tests **written** (JVM + instrumented) | ⚠️ | JVM unit tests run green; instrumented APK compiles; **execution on device = Sprint 8** |
 | C15 | CI hardened to Node-24 actions + signed release-AAB job | ✅ | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7, fail-closed release job) |
 | C16 | Batch no-silent-drops: per-file failure surfacing + on-device audit log | ⚠️ | `BatchFailureAudit` + completion notification reason summary (Constitution I.6); instrumented `failure_audit_record...` written; **device run Sprint 8** |
 | C17 | Google Tools Bridge (Drive/Docs/cloud-Gemini) | **ASPIRATIONAL (v2)** | ADR-010: deliberately staged OUT of v1, opt-in connected mode, fail-closed on-device default; Photos needs no bridge (system picker); AICore device-gated |
-| C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.2.1) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`), `apksigner verify` PASS on `app-release.apk`; `bundleRelease` → signed AAB (dev keystore); production keystore is human-owned |
+| C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.3.0) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`); `apksigner verify` PASS on `app-release.apk` **signed with the production keystore** (`~/.android/keystores/shrinkmedia-release.jks`, gitignored `keystore.properties`); distributed via GitHub sideload |
 | C14 | Android instrumentation tests **written** (JVM + instrumented) | ⚠️ | JVM unit tests run green; instrumented APK compiles; **execution on device = Sprint 8** |
 | C15 | CI hardened to Node-24 actions + signed release-AAB job | ✅ | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7, fail-closed release job) |
 
@@ -43,9 +43,11 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
   until implemented **and** verified (staged v2, ADR-010). C12 OCR is
   implemented **and** device-verified (reads "SHRINKMEDI" on API 36;
   `docs/evidence/2026-08-31_device_verification.md`).
-- **Release signing is configured and locally proven, but the production
-  keystore is a human-owned blocker.** The build fails closed (no unsigned
-  artifact) until a real keystore is provided.
+- **Release signing is complete.** The production keystore
+  (`~/.android/keystores/shrinkmedia-release.jks`) is generated; `keystore.properties`
+  references it and is gitignored (fail-closed if absent). `apksigner verify` PASS on
+  the v0.3.0 `app-release.apk`. **Backup the keystore + passwords off-machine — the
+  keystore is the app's permanent identity and cannot be recovered if lost.**
 
 ## Sprint Cross-Reference
 

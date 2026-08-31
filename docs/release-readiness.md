@@ -4,6 +4,19 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.3.0 signed release + distribution (2026-08-31, Sprint 10)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Production keystore generated (outside repo) | PASS | `~/.android/keystores/shrinkmedia-release.jks` (PKCS12, 2048-bit RSA, SHA256withRSA); `keytool` verified; `keytool -list` shows alias `shrinkmedia` |
+| `keystore.properties` gitignored + fail-closed | PASS | `.gitignore` lines 25-28 (`keystore.properties`, `*.jks`, `*.keystore`); build fails closed if absent |
+| Signed v0.3.0 release APK built | PASS | `./gradlew :app:assembleRelease` BUILD SUCCESSFUL; `app/build/outputs/apk/release/app-release.apk` |
+| Correct version/package | PASS | `aapt dump badging` → `versionName='0.3.0'` `versionCode='3'` `applicationId='com.shrinkmedia.compressor'` label "Media Compressor" |
+| `apksigner verify` PASS (production keystore) | PASS | cert SHA-256 `21569322706156fe...` matches generated keystore (`docs/evidence/2026-08-31_v0.3.0_signed_release.md`) |
+| R8 minified; ML Kit + OcrHelper kept | PASS | `minifyReleaseWithR8` BUILD SUCCESSFUL; seeds/usage/mapping keep `OcrHelper` + ML Kit registrars |
+| Signed APK sideload-installs + launches on API-36 | PASS | `adb install -r app-release.apk` Success + launch (`docs/evidence/2026-08-31_v0.3.0_signed_release.md`) |
+| GitHub Release `v0.3.0` with attached APK | PASS | Release created from tag `v0.3.0`; signed APK attached (sideload path, not Play) |
+
 ## Gate: v0.3.0 OCR + no-silent-drops hardening (2026-08-31, Sprint 9)
 
 | Item | Status | Evidence |

@@ -31,8 +31,8 @@
 | 3 | Native media + document toolkit (single/batch compression, FGS, battery pause, autosave, PDF) | Native | ⚠️ | `assembleDebug` green; device run = Sprint 8 (Sprints 1, 3, 4) |
 | 4 | Honest web model: pure batch/savings lib + tests | Web | ✅ | `src/lib/batch.ts` + 7 tests; 18 total `npm test` (Sprint 7) |
 | 5 | Real-path Android tests written (JVM + instrumented) | Native/Test | ⚠️ | JVM unit tests + instrumented APK compile green; device run = Sprint 8 (Sprint 7) |
-| 6 | Production namespace `com.shrinkmedia.compressor` | Release | ✅ | APK badging shows `com.shrinkmedia.compressor` v0.2.1 (Sprint 7) |
-| 7 | R8-minified signed release APK/AAB | Release | ✅ | `apksigner verify` PASS on `app-release.apk`; `bundleRelease` → signed AAB (Sprint 7, verified with dev keystore) |
+| 6 | Production namespace `com.shrinkmedia.compressor` | Release | ✅ | APK badging shows `com.shrinkmedia.compressor` v0.3.0 (Sprint 7) |
+| 7 | R8-minified signed release APK/AAB | Release | ✅ | `apksigner verify` PASS on `app-release.apk` (v0.3.0) **signed with production keystore** (`~/.android/keystores/shrinkmedia-release.jks`); released via GitHub sideload |
 | 8 | Launcher icon + label | Release | ✅ | `@mipmap/ic_launcher`/`@string/app_name` resolve; aapt badging lists label (Sprint 7) |
 | 9 | CI off deprecated Node-20 actions + signed release-AAB job | Governance/CI | ✅ | Workflow YAML parses; release job gated fail-closed on secrets (Sprint 7) |
 | 10 | Device verification — final gate | Test/QA | 🔵 | Instrumented suite green on API 24–35; battery-pause walkthrough (0 dropped); autosave verified; evidence filed (Sprint 8) |
