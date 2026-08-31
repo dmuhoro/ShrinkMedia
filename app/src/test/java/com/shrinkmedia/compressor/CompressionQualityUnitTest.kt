@@ -1,4 +1,4 @@
-package com.example.mediacompressor
+package com.shrinkmedia.compressor
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

@@ -1,4 +1,4 @@
-package com.example.mediacompressor
+package com.shrinkmedia.compressor
 
 import android.app.Application
 import android.content.ContentValues

@@ -22,3 +22,7 @@ htmlcov/
 *.db-wal
 *.class
 *.apk
+# Signing keystores
+keystore.properties
+*.jks
+*.keystore

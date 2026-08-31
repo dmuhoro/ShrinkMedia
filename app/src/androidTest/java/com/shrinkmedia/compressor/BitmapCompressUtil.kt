@@ -1,4 +1,4 @@
-package com.example.mediacompressor
+package com.shrinkmedia.compressor
 
 import android.graphics.Bitmap
 import java.io.BufferedOutputStream

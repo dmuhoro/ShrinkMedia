@@ -1,4 +1,4 @@
-package com.example.mediacompressor
+package com.shrinkmedia.compressor
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -41,8 +41,8 @@ class BatchCompressionService : Service() {
         const val CHANNEL_NAME = "Media Compression Background Tasks"
         const val NOTIFICATION_ID = 1001
 
-        const val ACTION_START_BATCH = "com.example.mediacompressor.START_BATCH"
-        const val ACTION_CANCEL_BATCH = "com.example.mediacompressor.CANCEL_BATCH"
+        const val ACTION_START_BATCH = "com.shrinkmedia.compressor.START_BATCH"
+        const val ACTION_CANCEL_BATCH = "com.shrinkmedia.compressor.CANCEL_BATCH"
 
         const val EXTRA_URIS = "extra_uris"
         const val EXTRA_IS_VIDEO = "extra_is_video"

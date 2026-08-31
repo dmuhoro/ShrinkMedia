@@ -1,4 +1,4 @@
-package com.example.mediacompressor
+package com.shrinkmedia.compressor
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first

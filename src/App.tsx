@@ -20,15 +20,15 @@ const GRADLE_CODE = `plugins {
 }
 
 android {
-    namespace = "com.example.mediacompressor"
+    namespace = "com.shrinkmedia.compressor"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.mediacompressor"
+        applicationId = "com.shrinkmedia.compressor"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -38,7 +38,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -104,7 +105,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }`;
 
-const FOREGROUND_SERVICE_CODE = `package com.example.mediacompressor
+const FOREGROUND_SERVICE_CODE = `package com.shrinkmedia.compressor
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -138,8 +139,8 @@ class BatchCompressionService : Service() {
         const val CHANNEL_NAME = "Media Compression Background Tasks"
         const val NOTIFICATION_ID = 1001
 
-        const val ACTION_START_BATCH = "com.example.mediacompressor.START_BATCH"
-        const val ACTION_CANCEL_BATCH = "com.example.mediacompressor.CANCEL_BATCH"
+        const val ACTION_START_BATCH = "com.shrinkmedia.compressor.START_BATCH"
+        const val ACTION_CANCEL_BATCH = "com.shrinkmedia.compressor.CANCEL_BATCH"
 
         const val EXTRA_URIS = "extra_uris"
         const val EXTRA_IS_VIDEO = "extra_is_video"
@@ -315,7 +316,7 @@ class BatchCompressionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 }`;
 
-const DATASTORE_CODE = `package com.example.mediacompressor
+const DATASTORE_CODE = `package com.shrinkmedia.compressor
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -1716,7 +1717,7 @@ export default function App() {
           <div className="flex-1 p-6 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-neutral-400">app/src/main/java/com/example/mediacompressor/BatchCompressionService.kt</span>
+                <span className="text-xs font-mono text-neutral-400">app/src/main/java/com/shrinkmedia/compressor/BatchCompressionService.kt</span>
                 <span className="text-[10px] bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded-full border border-purple-700/50">
                   Foreground Service + NotificationCompat
                 </span>
@@ -1740,7 +1741,7 @@ export default function App() {
           <div className="flex-1 p-6 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-neutral-400">app/src/main/java/com/example/mediacompressor/SettingsDataStore.kt</span>
+                <span className="text-xs font-mono text-neutral-400">app/src/main/java/com/shrinkmedia/compressor/SettingsDataStore.kt</span>
                 <span className="text-[10px] bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded-full border border-purple-700/50">
                   Jetpack DataStore Preferences
                 </span>
