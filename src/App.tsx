@@ -100,6 +100,9 @@ dependencies {
     // FFmpegKit Lite (Fast, standalone video compression engine)
     implementation("io.github.root0as:ffmpeg-kit-lite:6.0-2")
 
+    // ML Kit on-device text recognition (OCR) - runs locally, no INTERNET
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
     // Debug Tooling
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
