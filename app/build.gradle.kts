@@ -101,6 +101,11 @@ dependencies {
     // Jetpack DataStore Preferences for Persistent Settings
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // ML Kit on-device text recognition (OCR) — runs locally, no INTERNET.
+    // New dependency justified: no existing lib (FFmpegKit/Coil/DataStore/
+    // android.graphics.pdf) provides OCR; ML Kit is on-device and privacy-safe.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
     // FFmpegKit (x264 video compression engine; maintained Central-published fork
     // exposing the com.arthenica.ffmpegkit API used by MainActivity)
     implementation("io.github.nikita36078:ffmpeg-kit:6.0.LTS")

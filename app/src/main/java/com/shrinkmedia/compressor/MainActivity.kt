@@ -69,6 +69,7 @@ data class UiState(
     val status: String = "Ready — all processing stays on-device.", val quality: CompressionQuality = CompressionQuality.MEDIUM,
     val mediaResult: MediaResult? = null, val imageUris: List<Uri> = emptyList(), val mergeUris: List<Uri> = emptyList(), val pdfUri: Uri? = null,
     val pdfMetrics: PdfMetrics? = null, val documentOutput: File? = null, val extractedText: String = "",
+    val ocrUri: Uri? = null, val ocrText: String? = null, val ocrStatus: String = "",
     val autoSave: Boolean = false, val pauseOnLowBattery: Boolean = false,
     val totalSavedBytes: Long = 0L, val totalFiles: Long = 0L
 )
@@ -104,6 +105,24 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
     fun mergePdfFiles() = work("Merging PDFs locally…") { val context = getApplication<Application>().applicationContext; val output = mergePdfDocuments(context, _state.value.mergeUris); _state.update { it.copy(documentOutput = output) }; "Created ${output.name}" }
     fun splitPdf() = work("Splitting PDF pages locally…") { val context = getApplication<Application>().applicationContext; val outputs = splitPdfIntoPages(context, requireNotNull(_state.value.pdfUri) { "Choose a PDF first." }); _state.update { it.copy(documentOutput = outputs.first()) }; "Created ${outputs.size} PDF page files" }
     fun extractText() = work("Extracting local PDF text…") { val text = extractRawTextFromUri(getApplication<Application>().applicationContext, requireNotNull(_state.value.pdfUri) { "Choose a PDF first." }); _state.update { it.copy(extractedText = text) }; "Extracted ${text.length} characters locally" }
+    fun ocrImage(uri: Uri) {
+        if (_state.value.busy) return
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true, status = "Running on-device OCR…", ocrUri = uri, ocrText = null, ocrStatus = "") }
+            try {
+                val text = OcrHelper.recognizeText(getApplication<Application>().applicationContext, uri)
+                when {
+                    text == null -> _state.update { it.copy(ocrText = null, ocrStatus = "OCR could not read this image.", status = "OCR failed for this image.") }
+                    text.isEmpty() -> _state.update { it.copy(ocrText = "", ocrStatus = "No text recognized in this image.", status = "No text recognized.") }
+                    else -> _state.update { it.copy(ocrText = text, ocrStatus = "Recognized ${text.length} characters on-device.", status = "OCR complete.") }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(ocrText = null, ocrStatus = "OCR failure: ${e.message ?: "unknown error"}", status = "OCR failed.") }
+            } finally {
+                _state.update { it.copy(busy = false) }
+            }
+        }
+    }
     private fun work(start: String, task: suspend () -> String) { if (_state.value.busy) return; viewModelScope.launch { _state.update { it.copy(busy = true, status = start) }; try { _state.update { it.copy(status = task()) } } catch (e: Exception) { _state.update { it.copy(status = e.message ?: "Operation failed.") } } finally { _state.update { it.copy(busy = false) } } } }
 }
 
@@ -119,6 +138,7 @@ class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceSt
     val videoCompressBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.batchVideos(it) }
     val pdfBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.mergePdfs(it) }
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::pdf) }
+    val ocrImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::ocrImage) }
     Box(Modifier.fillMaxSize()) {
         Scaffold(topBar = { Column { TopAppBar(title = { Column { Text("ShrinkMedia", fontWeight = FontWeight.Bold); Text("Private media & document toolkit", fontSize = 12.sp) } }); PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { ToolkitTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { viewModel.tab(tab) }, text = { Text(tab.label) }, icon = { Icon(tabIcon(tab), null) }) } } } }) { inset ->
             Column(Modifier.fillMaxSize().padding(inset).padding(horizontal = 20.dp)) {
@@ -126,7 +146,7 @@ class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceSt
                 when (state.tab) {
                     ToolkitTab.MEDIA -> MediaTab(state, viewModel, { imagePicker.launch("image/*") }, { videoPicker.launch("video/*") }, { imageCompressBatchPicker.launch("image/*") }, { videoCompressBatchPicker.launch("video/*") })
                     ToolkitTab.DOCUMENTS -> DocumentsTab(state, viewModel, { imageBatchPicker.launch("image/*") }, { pdfPicker.launch("application/pdf") }, { pdfBatchPicker.launch("application/pdf") })
-                    ToolkitTab.AI -> AiTab(state, viewModel, { pdfPicker.launch("application/pdf") })
+                    ToolkitTab.AI -> AiTab(state, viewModel, { pdfPicker.launch("application/pdf") }, { ocrImagePicker.launch("image/*") })
                 }
             }
         }
@@ -153,10 +173,12 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
     state.documentOutput?.let { item { OutputCard("Document output", it.name, formatFileSize(it.length())) } }
 }
 
-@Composable private fun AiTab(state: UiState, vm: ToolkitViewModel, pickPdf: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-    item { Hero("Elite AI Assistant", "A private text-extraction pipeline ready to feed Android’s native AICore when a device model is available.") }
-    item { Card { Column(Modifier.padding(16.dp)) { Text("Local PDF text scraper", fontWeight = FontWeight.Bold); Text("Extracts embedded text from a local PDF stream. Image-only scans require a local OCR module.", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(pickPdf) { Text("Choose PDF") }; Button({ vm.extractText() }, enabled = state.pdfUri != null) { Text("Extract text") } } } } }
-    if (state.extractedText.isNotBlank()) item { Card { Text(state.extractedText.take(12000), Modifier.padding(16.dp), fontSize = 13.sp) } }
+@Composable private fun AiTab(state: UiState, vm: ToolkitViewModel, pickPdf: () -> Unit, pickOcrImage: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    item { Hero("Elite AI Assistant", "A private, on-device text pipeline. Read text from PDFs and photos without any file leaving this device.") }
+    item { Card { Column(Modifier.padding(16.dp)) { Text("Local PDF text scraper", fontWeight = FontWeight.Bold); Text("Extracts embedded text from a local PDF stream.", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(pickPdf) { Text("Choose PDF") }; Button({ vm.extractText() }, enabled = state.pdfUri != null) { Text("Extract text") } } } } }
+    if (state.extractedText.isNotBlank()) item { Card { Column(Modifier.padding(16.dp)) { Text("Extracted PDF text", fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp)); Text(state.extractedText.take(12000), fontSize = 13.sp) } } }
+    item { Card { Column(Modifier.padding(16.dp)) { Text("Scan reader (OCR)", fontWeight = FontWeight.Bold); Text("Reads printed text from a photo or scan — fully on-device via ML Kit, no model download and no upload.", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Button({ pickOcrImage() }, enabled = !state.busy) { Text(if (state.busy) "Working…" else "Choose scan image") } } } }
+    if (state.ocrUri != null) item { Card { Column(Modifier.padding(16.dp)) { Text(state.ocrStatus, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp); if (!state.ocrText.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Text(state.ocrText.take(12000), fontSize = 13.sp) } } } }
     item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text("AICore handoff: extracted text is held locally and can be sent to a device model after adding the platform AICore dependency and availability check.", Modifier.padding(16.dp), fontSize = 13.sp) } }
 }
 
