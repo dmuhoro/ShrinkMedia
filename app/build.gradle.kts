@@ -110,6 +110,14 @@ dependencies {
     // exposing the com.arthenica.ffmpegkit API used by MainActivity)
     implementation("io.github.nikita36078:ffmpeg-kit:6.0.LTS")
 
+    // iText7 (on-device PDF engine). New dependency justified (AGENTS §6):
+    // android.graphics.pdf can render/merge pages but CANNOT extract embedded text
+    // and rasterizes on merge, and no existing lib (FFmpegKit/Coil/DataStore/ML Kit)
+    // provides it. iText7 PdfTextExtractor is the only way to read real, compressed
+    // PDF text streams on-device (fixes the special-character bug); it also builds
+    // true vector PDFs. Runs fully locally — no INTERNET permission.
+    implementation("com.itextpdf:itext7-core:7.2.5")
+
     // Debug Tooling
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

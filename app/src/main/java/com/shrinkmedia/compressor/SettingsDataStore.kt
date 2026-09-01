@@ -22,6 +22,8 @@ data class PersistedUserSettings(
     val pauseCompressionOnLowBattery: Boolean = false,
     val imageQuality: CompressionQuality = CompressionQuality.MEDIUM,
     val videoQuality: CompressionQuality = CompressionQuality.MEDIUM,
+    val ocrLanguage: String = OcrLanguage.ENGLISH.key,
+    val enableBatch: Boolean = false,
     val totalHistoricalSavedBytes: Long = 0L,
     val totalHistoricalFilesCount: Long = 0L
 )
@@ -34,6 +36,8 @@ class SettingsRepository(private val context: Context) {
         val PAUSE_ON_LOW_BATTERY = booleanPreferencesKey("pause_compression_on_low_battery")
         val IMAGE_QUALITY = stringPreferencesKey("image_quality")
         val VIDEO_QUALITY = stringPreferencesKey("video_quality")
+        val OCR_LANGUAGE = stringPreferencesKey("ocr_language")
+        val ENABLE_BATCH = booleanPreferencesKey("enable_batch")
         val TOTAL_SAVED_BYTES = longPreferencesKey("total_saved_bytes")
         val TOTAL_FILES_COUNT = longPreferencesKey("total_files_count")
     }
@@ -59,6 +63,11 @@ class SettingsRepository(private val context: Context) {
             val vidQStr = preferences[PreferencesKeys.VIDEO_QUALITY] ?: CompressionQuality.MEDIUM.name
             val vidQuality = try { CompressionQuality.valueOf(vidQStr) } catch (e: Exception) { CompressionQuality.MEDIUM }
 
+            val ocrLang = preferences[PreferencesKeys.OCR_LANGUAGE] ?: OcrLanguage.ENGLISH.key
+            val ocrLanguage = try { OcrLanguage.fromKey(ocrLang).key } catch (e: Exception) { OcrLanguage.ENGLISH.key }
+
+            val enableBatch = preferences[PreferencesKeys.ENABLE_BATCH] ?: false
+
             val savedBytes = preferences[PreferencesKeys.TOTAL_SAVED_BYTES] ?: 0L
             val filesCount = preferences[PreferencesKeys.TOTAL_FILES_COUNT] ?: 0L
 
@@ -68,6 +77,8 @@ class SettingsRepository(private val context: Context) {
                 pauseCompressionOnLowBattery = pauseOnLowBattery,
                 imageQuality = imgQuality,
                 videoQuality = vidQuality,
+                ocrLanguage = ocrLanguage,
+                enableBatch = enableBatch,
                 totalHistoricalSavedBytes = savedBytes,
                 totalHistoricalFilesCount = filesCount
             )
@@ -88,6 +99,18 @@ class SettingsRepository(private val context: Context) {
     suspend fun updatePauseCompressionOnLowBattery(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.PAUSE_ON_LOW_BATTERY] = enabled
+        }
+    }
+
+    suspend fun updateOcrLanguage(ocrLanguage: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.OCR_LANGUAGE] = ocrLanguage
+        }
+    }
+
+    suspend fun updateEnableBatch(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ENABLE_BATCH] = enabled
         }
     }
 

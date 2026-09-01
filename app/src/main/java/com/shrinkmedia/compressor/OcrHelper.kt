@@ -30,12 +30,17 @@ object OcrHelper {
     /**
      * Recognize text in the image referenced by [imageUri].
      *
+     * [language] selects the on-device recognition language. English maps to the
+     * bundled Latin model (fully offline, no downloads). Other languages can be
+     * added additively without changing this signature (kept as a String key so
+     * the instrumented test calling the 2-arg form keeps compiling).
+     *
      * Returns the recognized text on success (may be empty when no text found),
      * or `null` when OCR could not run (failed to decode / recognize).
      */
-    suspend fun recognizeText(context: Context, imageUri: Uri): String? {
+    suspend fun recognizeText(context: Context, imageUri: Uri, language: String = OcrLanguage.ENGLISH.key): String? {
         val recognizer: TextRecognizer = try {
-            // DEFAULT_OPTIONS = bundled Latin model; no downloads, fully on-device.
+            // DEFAULT_OPTIONS = bundled Latin model (English); no downloads, fully on-device.
             TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         } catch (e: Exception) {
             return null
