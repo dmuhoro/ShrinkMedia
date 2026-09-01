@@ -21,6 +21,7 @@
 | `assembleRelease` (R8 minify) | PASS | `minifyReleaseWithR8` executed; `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
 | `lintDebug` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
 | Device install + launch (API 36) — no crashes | PASS | `adb install --user 0` Success; `am start` → topResumedActivity MainActivity, PID alive, logcat clean (`docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`) |
+| GitHub Release `v0.4.0` with attached signed APK | PASS | Release published from tag `v0.4.0`; `app-release.apk` (58,184,288 B) attached; `apksigner verify` cert SHA-256 `21569322706156fe...` (production keystore); https://github.com/dmuhoro/ShrinkMedia/releases/tag/v0.4.0 |
 
 ## Gate: v0.3.1 — PDF iText pipeline + UI polish (2026-09-01, Sprint 11)
 

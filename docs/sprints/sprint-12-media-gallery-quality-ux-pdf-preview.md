@@ -54,7 +54,7 @@ This sprint delivers all five in a single, cohesive UX layer.
 - [x] Media tab: quality radio buttons vertical descending; "Your Media" loads thumbnails
 - [x] Documents tab: PDF build shows preview dialog; text extraction improved
 - [x] RecentSection: before/after sizes visible on every card
-- [ ] All commits SSH-signed; pushed to `origin/main`; tag `v0.4.0` created
+- [x] All commits SSH-signed; pushed to `origin/main`; tag `v0.4.0` created; GitHub Release `v0.4.0` published with attached signed APK
 
 ## Cross-Reference
 

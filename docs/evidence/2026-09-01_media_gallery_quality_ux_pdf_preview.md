@@ -95,7 +95,28 @@ Result: app process alive (PID 8337), `MainActivity` is the top resumed
 activity, no FATAL / AndroidRuntime crashes in logcat. The only log lines are
 harmless MIUI framework notices (`MiuiPreloadClassImpl`, `ActivityThread`).
 
-### 3. Key Code Changes (Diff Summary)
+### 3. Release Artifact Verification
+
+```bash
+$ aapt2 dump badging app/build/outputs/apk/release/app-release.apk
+package: name='com.shrinkmedia.compressor' versionCode='4' versionName='0.4.0' ...
+
+$ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+Signer #1 certificate DN: CN=ShrinkMedia, OU=ShrinkMedia, O=ShrinkMedia, ...
+Signer #1 certificate SHA-256 digest: 21569322706156fe02111cc5a8ce0f62...
+
+$ git ls-remote --tags origin | grep v0.4.0
+c09fb4b0f36cfb71fb5bf00d0a8c35540cf3fa3e	refs/tags/v0.4.0
+c43a2c977520aaea50d5a776bd3a4cd5d2ed7f57	refs/tags/v0.4.0^{}   # tags commit c43a2c9
+
+$ gh release view v0.4.0 --json isDraft,tagName,publishedAt,assets
+{"assets":["app-release.apk"],"isDraft":false,"publishedAt":"2026-09-01T20:15:57Z","tagName":"v0.4.0"}
+```
+
+All 4 Sprint 12 commits carry Good ED25519 SSH signatures
+(`git log --show-signature`). Release: https://github.com/dmuhoro/ShrinkMedia/releases/tag/v0.4.0
+
+### 4. Key Code Changes (Diff Summary)
 
 **app/build.gradle.kts — v0.4.0**
 - `versionCode 4`, `versionName "0.4.0"` (was 3 / 0.3.0)
@@ -140,7 +161,7 @@ is **not** pixel-pixel identical to the source document. True fidelity requires
 page rendering (`PdfRenderer`), which is out of scope for text extraction. This
 is documented rather than over-claimed.
 
-### 4. Git Diff Summary
+### 5. Git Diff Summary
 
 ```
  3 files changed, 239 insertions(+), 16 deletions(-)
@@ -151,7 +172,7 @@ is documented rather than over-claimed.
  - docs/sprints/sprint-12-media-gallery-quality-ux-pdf-preview.md (plan)
 ```
 
-### 5. Cross-Reference
+### 6. Cross-Reference
 
 All claims in this evidence map to:
 - `docs/sprints/sprint-12-media-gallery-quality-ux-pdf-preview.md`
