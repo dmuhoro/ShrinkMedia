@@ -22,7 +22,22 @@ htmlcov/
 *.db-wal
 *.class
 *.apk
-# Signing keystores
+# Signing keystores + credentials (FAIL CLOSED: never commit these)
 keystore.properties
 *.jks
 *.keystore
+*.keystore.properties
+*.pkcs12
+*.p12
+*.pfx
+# Secret / key / password material (regardless of location in the repo)
+*passwords.txt
+*password*.txt
+*.key
+*.keychain
+*.pem
+*secret*
+*.secrets
+*.env.local
+.env.*
+!*.md
