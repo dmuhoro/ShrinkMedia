@@ -5,6 +5,59 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.4.0] — 2026-09-01
+
+Real-world usability overhaul: the Media tab now shows the user's actual media
+library with a vertical quality selector, PDF builds surface a preview dialog,
+and embedded-text extraction preserves layout better. All 6 Android gates and
+the on-device launch gate are green.
+
+### Added
+- **Your media library** (`MainActivity.kt` — `MediaFile`, `MediaFileCard`,
+  `getUserMediaFiles`):
+  - Queries `MediaStore.Images.Media` + `MediaStore.Video.Media` on
+    `Dispatchers.IO` at ViewModel init (date-descending).
+  - Coil thumbnails for images (`rememberAsyncImagePainter`), video icon for
+    videos; shows name, type, size; per-item **Compress** button.
+  - Purely local content-provider reads — no storage permission, no INTERNET.
+- **Vertical quality selector**: `FilterChip` row → `Column` of `RadioButton`
+  rendered **HIGH → MEDIUM → LOW** (descending) with per-preset JPEG q/max-dim
+  captions; `CompressionQuality` reordered `HIGH(90,2560)`, `MEDIUM(75,1920)`,
+  `LOW(55,1280)`.
+- **PDF build preview** (`PdfPreviewState`): after `createPdfFromImages`, a
+  card shows the file name, page count, and size with **Open** (FileProvider
+  `ACTION_VIEW`, fallback toast "No PDF viewer found"), **Save to Gallery**
+  (`saveToPublicMediaStore` + `addDocumentToRecent`, explicit success/failure
+  toast), and **Discard** (deletes the temp file).
+- **`ToolkitViewModel.showToast(message)`** — explicit SharedFlow emit for
+  transient UI messages.
+- **Sprint 12 docs**: `docs/sprints/sprint-12-media-gallery-quality-ux-pdf-preview.md`
+  (EXECUTED), `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`.
+
+### Changed
+- **PDF text extraction** (`extractRawTextFromUri`): `SimpleTextExtractionStrategy`
+  → `LocationTextExtractionStrategy` (approximate X/Y layout preservation for
+  better paragraph/column reconstruction) + `--- Page N ---` headers between
+  non-blank pages. Fidelity limitation documented honestly (D006): not
+  pixel-perfect; true fidelity needs `PdfRenderer` page rendering.
+- Version bumped to `0.4.0` (`versionCode 4`).
+
+### Fixed
+- `MainActivity.kt` `android.graphics.Color` vs Compose `Color` conflict —
+  Compose color aliased as `ComposeColor`; PDF canvas uses fully-qualified
+  `android.graphics.Color.WHITE`.
+- `Modifier.clip(shape)` unresolved in the Compose BOM — thumbnail tile uses
+  `Modifier.background(color, RoundedCornerShape(8.dp))`, which clips rounded
+  corners automatically.
+
+### Note
+- All builds pass: `compileDebugKotlin`, `testDebugUnitTest`, `assembleDebug`,
+  `compileDebugAndroidTestKotlin`, `assembleRelease` (R8 executed), `lintDebug`.
+- App installs + launches on API-36 device with no crashes (top resumed
+  activity `com.shrinkmedia.compressor/.MainActivity`, logcat clean).
+- Manifest still declares **no INTERNET permission** (privacy invariant held).
+- Evidence: `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`.
+
 ## [0.3.1] — 2026-09-01
 
 PDF pipeline hardened with iText 7 (true vector build, page-exact merge, real

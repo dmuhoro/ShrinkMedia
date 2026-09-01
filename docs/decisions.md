@@ -59,6 +59,21 @@ is fail-closed: any I/O failure returns `null`/empty and is surfaced to the UI.
 
 ---
 
+## D006 — PDF text fidelity: layout-aware extraction, not pixel-perfect (ACCEPTED)
+
+- **Date:** 2026-09-01 • **Decider:** Daniel Muhoro
+
+`extractRawTextFromUri` moved from `SimpleTextExtractionStrategy` to
+`LocationTextExtractionStrategy`, which uses approximate glyph X/Y coordinates
+to reconstruct paragraphs/columns more faithfully, and adds a `--- Page N ---`
+header between pages. This improves layout resemblance but is **not** identical
+to the source document. True pixel-perfect fidelity would require rendering
+each page (`PdfRenderer`) rather than extracting the text layer. This honesty
+gate was accepted: we document the limitation rather than over-claim "identical
+output."
+
+---
+
 ## Superseded
 
 - None yet. When an ADR supersedes a D-entry, the entry is marked `SUPERSEDED`

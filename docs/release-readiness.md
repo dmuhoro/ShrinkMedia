@@ -4,6 +4,24 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.4.0 — Media Gallery + Quality UX + PDF Preview + Text Fidelity (2026-09-01, Sprint 12)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Media tab: vertical quality selector `HIGH→MEDIUM→LOW` | PASS | `CompressionQuality.entries.sortedByDescending { it.ordinal }` RadioButton Column; `MainActivity.kt` |
+| Media tab: "Your media library" via MediaStore (Images+Video) | PASS | `getUserMediaFiles` (dispatched IO); `MediaFile` + `MediaFileCard` (Coil thumbnails); no INTERNET permission |
+| Per-item Compress + before/after size visibility | PASS | `MediaFileCard` Compress button; `ResultCard` `before → after`; PDF preview shows size |
+| Documents: PDF build preview (Open / Save to Gallery / Discard) | PASS | `PdfPreviewState`; FileProvider `ACTION_VIEW` + fallback toast; discard deletes temp file |
+| PDF text extraction uses `LocationTextExtractionStrategy` + page headers | PASS | `extractRawTextFromUri`; honest fidelity note (D006) |
+| App version v0.4.0 / versionCode 4 | PASS | `app/build.gradle.kts` (was 3 / 0.3.0) |
+| `compileDebugKotlin` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| `testDebugUnitTest` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| `assembleDebug` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| `compileDebugAndroidTestKotlin` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| `assembleRelease` (R8 minify) | PASS | `minifyReleaseWithR8` executed; `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| `lintDebug` | PASS | `docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md` |
+| Device install + launch (API 36) — no crashes | PASS | `adb install --user 0` Success; `am start` → topResumedActivity MainActivity, PID alive, logcat clean (`docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`) |
+
 ## Gate: v0.3.1 — PDF iText pipeline + UI polish (2026-09-01, Sprint 11)
 
 | Item | Status | Evidence |

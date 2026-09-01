@@ -25,9 +25,11 @@ the UI.
 │  MEDIA ENG.  │  DOCUMENT ENG. (iText 7)                   │  SETTINGS / QUEUE             │
 │  compressImageFile (BitmapFactory sampling)  │  createPdfFromImages (vector) │
 │  compressVideoFile (FFmpegKit async session) │  mergePdfDocuments (page-exact) │
-│  saveToPublicMediaStore (MediaStore insert)  │  extractRawTextFromUri (iText) │
-│              └── foreground batch path ──►   │  readPdfMetrics (PdfRenderer) │
-│                                              │  splitPdfIntoPages (bitmap)    │
+│  saveToPublicMediaStore (MediaStore insert)  │  extractRawTextFromUri (iText, │
+│  getUserMediaFiles (MediaStore gallery query)│    LocationTextExtractionStrategy) │
+│  MediaFile / MediaFileCard (Coil thumbnails) │  readPdfMetrics (PdfRenderer) │
+│              └── foreground batch path ──►   │  splitPdfIntoPages (bitmap)    │
+│                                  │  PdfPreviewState (Open/Save/Discard) │
 │                                              │  SettingsRepository            │
 │                                              │    (DataStore Preferences)     │
 │                                              │  BatchCompressionPauseController
@@ -52,12 +54,16 @@ the UI.
    it reruns the same engine helpers per URI, reading **live** DataStore for
    autosave, and gates items on `isPaused`.
 5. **Outputs** default to cache; autosave (opt-in) inserts into MediaStore.
+6. **Media gallery** (`getUserMediaFiles`) queries `MediaStore.Images/Video` on
+   `Dispatchers.IO` at ViewModel init; thumbnails load via Coil
+   `rememberAsyncImagePainter` from local content-provider URIs (no storage
+   permission, no INTERNET).
 
 ## Key Modules & Files
 
 | Module | File | Responsibility |
 |--------|------|----------------|
-| UI shell | `app/.../MainActivity.kt` | Tabs, state, pickers, engine helpers |
+| UI shell | `app/.../MainActivity.kt` | Tabs, state, pickers, engine helpers; MediaTab media gallery (`getUserMediaFiles`/`MediaFileCard`, vertical quality radio UX); DocumentsTab PDF preview (`PdfPreviewState`); `LocationTextExtractionStrategy` extraction |
 | Settings | `app/.../SettingsDataStore.kt` | `PersistedUserSettings`, repository |
 | Batch queue | `app/.../BatchCompressionService.kt` | Foreground loop + pause controller + battery receiver |
 | Simulator | `src/App.tsx` | Web preview + code tabs |
