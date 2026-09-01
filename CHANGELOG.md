@@ -5,6 +5,81 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.3.1] — 2026-09-01
+
+PDF pipeline hardened with iText 7 (true vector build, page-exact merge, real
+embedded-text extraction), UI polished with recent files management, settings
+sheet, and dark/light/system theme support. All compilation gates green
+including R8 minification.
+
+### Added
+- **iText 7.2.5 PDF engine** (on-device, no INTERNET):
+  - `createPdfFromImages`: single `ITextLayoutDoc` + `AreaBreak(PageSize.A4)`
+    per image → true vector PDF pages (crisp, no bitmap rasterization).
+  - `mergePdfDocuments`: temp-file → `PdfReader(File)` → `copyPagesTo` →
+    cleanup; reliable random access on Android, no `byte[]` constructor issues.
+  - `extractRawTextFromUri`: iText `PdfTextExtractor` +
+    `SimpleTextExtractionStrategy` on temp file; honest "scan / OCR needed"
+    message when no embedded text found.
+  - `readPdfMetrics` / `splitPdfIntoPages` retained on `android.graphics.pdf`
+    (page count + bitmap fallback).
+- **Recent files section** with expandable audit detail cards:
+  - Share (system share sheet via `FileProvider`).
+  - Delete → 5s undo (moves to app-sandbox trash dir, restores on undo).
+  - Clear all → removes cached files + history.
+  - Audit detail panel: quality preset, target bitrate, resolution scaling,
+    duration, media type.
+- **Settings sheet** (ModalBottomSheet):
+  - Theme: System / Light / Dark (persisted).
+  - OCR language: English, Spanish, French, German, Italian, Portuguese
+    (6 options, additive DataStore key, default ENGLISH).
+  - Batch mode toggle (advanced, off by default).
+  - Autosave to gallery, Pause on low battery.
+  - Privacy reminder: "All processing stays on-device. No files are uploaded.
+    The app declares no INTERNET permission."
+- **Snackbar toasts** via `MutableSharedFlow<String>` + `SnackbarHost` —
+  transient user-facing messages replace inline status text.
+- **Dark/Light/System theme** via `AppThemeMode` enum + `ThemeWrapper`
+  composable; persists to DataStore.
+- **OCR language parameter**: `OcrHelper.recognizeText(context, uri, language)`
+  3-arg form; `OcrLanguage` enum with ML Kit language codes.
+- **DataStore additive keys** (fail-closed defaults):
+  - `ocr_language` (String, default `en`).
+  - `enable_batch` (Boolean, default `false`).
+- **R8 proguard fix**: `-dontwarn org.slf4j.impl.StaticLoggerBinder` in
+  `app/proguard-rules.pro` (iText pulls in slf4j-api; binding is optional).
+
+### Changed
+- **PDF build/merge/extract** now use iText 7 consistently (was mixed
+  `android.graphics.pdf` + heuristic text extraction).
+- `mergePdfDocuments` and `extractRawTextFromUri` use temp-file pattern
+  (D005) for reliable `PdfReader(File)` random access.
+- `createPdfFromImages` uses single layout `Document` + `AreaBreak` per page
+  (was new `PdfDocument` per image).
+- `OcrHelper.recognizeText` signature extended with `language` parameter
+  (default ENGLISH); `AiTab` passes selected language from state.
+- `MainActivity` UI: `DocumentsTab` hero text updated to reflect iText
+  embedded-text extraction; `AiTab` OCR card shows selected language label.
+- Recent compression entries now include PDF outputs via `addDocumentToRecent`.
+
+### Fixed
+- **Compile errors** from iText migration resolved:
+  - `PdfReader` constructor mismatches (no `byte[]` overload on Android) —
+    fixed via temp-file pattern.
+  - `Image` import conflict (iText vs Compose icons) — fixed with `ITextImage`
+    alias.
+  - `AreaBreak` API: `AreaBreak(PageSize.A4)` (was `AreaBreakType.NEXT_PAGE`).
+  - Removed unused imports (`RandomAccessFile`, `RandomAccessSourceFactory`).
+- **R8 release build** warning on missing `StaticLoggerBinder` — fixed with
+  `-dontwarn` proguard rule.
+
+### Note
+- All builds pass: `compileDebugKotlin`, `testDebugUnitTest`, `assembleDebug`,
+  `compileDebugAndroidTestKotlin`, `assembleRelease` (R8), `lintDebug`.
+- App installs and launches on API-36 device without crashes.
+- Manifest still declares **no INTERNET permission** (privacy invariant held).
+- Evidence: `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md`.
+
 ## [0.3.0] — 2026-08-31
 
 Real on-device OCR, honest batch failure surfacing, and the hardware-verified
