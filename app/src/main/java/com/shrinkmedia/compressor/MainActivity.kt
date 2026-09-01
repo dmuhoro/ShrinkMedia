@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -22,9 +23,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -32,6 +36,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
+
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,11 +56,12 @@ import com.itextpdf.kernel.pdf.PdfDocument as ITextDoc
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
-import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy
+import com.itextpdf.kernel.pdf.canvas.parser.listener.LocationTextExtractionStrategy
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject
 import com.itextpdf.layout.element.AreaBreak
 import com.itextpdf.layout.element.Image as ITextImage
 import com.itextpdf.layout.Document as ITextLayoutDoc
+import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -84,7 +92,9 @@ enum class OcrLanguage(val key: String, val label: String) {
     }
 }
 enum class CompressionQuality(val label: String, val imageQuality: Int, val maxDimension: Int, val videoCrf: Int, val videoBitrate: String) {
-    LOW("Low / maximum savings", 55, 1280, 32, "800k"), MEDIUM("Balanced", 75, 1920, 28, "1500k"), HIGH("High / best quality", 90, 2560, 23, "2500k")
+    HIGH("High / best quality", 90, 2560, 23, "2500k"),
+    MEDIUM("Balanced", 75, 1920, 28, "1500k"),
+    LOW("Low / maximum savings", 55, 1280, 32, "800k")
 }
 enum class ToolkitTab(val label: String) { MEDIA("Media"), DOCUMENTS("Documents"), AI("Elite AI") }
 data class MediaResult(val name: String, val before: Long, val output: File, val isVideo: Boolean)
@@ -109,6 +119,16 @@ data class RecentCompression(
 )
 data class PendingDeletion(val recent: RecentCompression, val trashFile: File)
 
+data class MediaFile(
+    val id: Long,
+    val name: String,
+    val uri: Uri,
+    val size: Long,
+    val mimeType: String,
+    val dateAdded: Long,
+    val isVideo: Boolean
+)
+
 data class UiState(
     val tab: ToolkitTab = ToolkitTab.MEDIA, val busy: Boolean = false,
     val status: String = "Ready — all processing stays on-device.",
@@ -123,7 +143,16 @@ data class UiState(
     val autoSave: Boolean = false, val pauseOnLowBattery: Boolean = false,
     val totalSavedBytes: Long = 0L, val totalFiles: Long = 0L,
     val recent: List<RecentCompression> = emptyList(),
-    val pendingDeletion: PendingDeletion? = null
+    val pendingDeletion: PendingDeletion? = null,
+    val userMedia: List<MediaFile> = emptyList(),
+    val pdfPreview: PdfPreviewState? = null
+)
+
+data class PdfPreviewState(
+    val file: File,
+    val pageCount: Int,
+    val onSave: () -> Unit,
+    val onDiscard: () -> Unit
 )
 
 class ToolkitViewModel(application: Application) : AndroidViewModel(application) {
@@ -134,6 +163,8 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
     /** Global snackbar channel: UI-side observer surfaces failures + status (I.6). */
     private val _toast = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val toast: SharedFlow<String> = _toast.asSharedFlow()
+
+    fun showToast(message: String) = _toast.tryEmit(message)
 
     init {
         viewModelScope.launch {
@@ -152,6 +183,8 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
         }
+        // Load user media on startup
+        viewModelScope.launch { loadUserMedia() }
     }
 
     private val trashDir: File
@@ -257,10 +290,34 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
     fun buildPdf() = work("Generating PDF portfolio…") {
         val context = getApplication<Application>().applicationContext
         val output = createPdfFromImages(context, _state.value.imageUris)
-        _state.update { it.copy(documentOutput = output, mediaResult = null) }
-        _toast.tryEmit("Created ${output.name}")
-        addDocumentToRecent(context, output)
-        "Created ${output.name}"
+        val pageCount = readPdfPageCount(context, output)
+        _state.update { it.copy(pdfPreview = PdfPreviewState(
+            file = output,
+            pageCount = pageCount,
+            onSave = { savePdfToGallery(context, output) },
+            onDiscard = { output.delete(); _state.update { it.copy(pdfPreview = null) } }
+        )) }
+        _toast.tryEmit("PDF created — preview below")
+        "PDF created: ${output.name} (${pageCount} pages)"
+    }
+
+    private fun savePdfToGallery(context: Context, file: File) {
+        val saved = saveToPublicMediaStore(context, file, false)
+        if (saved) {
+            _toast.tryEmit("Saved to gallery")
+            addDocumentToRecent(context, file)
+        } else {
+            _toast.tryEmit("Failed to save to gallery")
+        }
+        _state.update { it.copy(pdfPreview = null) }
+    }
+
+    private suspend fun readPdfPageCount(context: Context, file: File): Int = withContext(Dispatchers.IO) {
+        try {
+            val descriptor = context.contentResolver.openFileDescriptor(Uri.fromFile(file), "r")
+            if (descriptor == null) return@withContext 0
+            descriptor.use { PdfRenderer(it).use { it.pageCount } }
+        } catch (_: Exception) { 0 }
     }
 
     fun mergePdfFiles() = work("Merging PDFs locally…") {
@@ -388,6 +445,78 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun loadUserMedia() = work("Loading your media…") {
+        val context = getApplication<Application>().applicationContext
+        val mediaFiles = getUserMediaFiles(context)
+        _state.update { it.copy(userMedia = mediaFiles) }
+        "Loaded ${mediaFiles.size} media files"
+    }
+
+    /** Query MediaStore for images and videos, return combined list sorted by dateAdded desc. */
+    private suspend fun getUserMediaFiles(context: Context): List<MediaFile> = withContext(Dispatchers.IO) {
+        val result = mutableListOf<MediaFile>()
+        val projection = arrayOf(
+            MediaStore.MediaColumns._ID,
+            MediaStore.MediaColumns.DISPLAY_NAME,
+            MediaStore.MediaColumns.SIZE,
+            MediaStore.MediaColumns.MIME_TYPE,
+            MediaStore.MediaColumns.DATE_ADDED
+        )
+        val sortOrder = "${MediaStore.MediaColumns.DATE_ADDED} DESC"
+
+        // Images
+        context.contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection, null, null, sortOrder
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+            val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idCol)
+                val uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id.toString())
+                result.add(MediaFile(
+                    id = id,
+                    name = cursor.getString(nameCol) ?: "image",
+                    uri = uri,
+                    size = cursor.getLong(sizeCol),
+                    mimeType = cursor.getString(mimeCol) ?: "image/jpeg",
+                    dateAdded = cursor.getLong(dateCol),
+                    isVideo = false
+                ))
+            }
+        }
+
+        // Videos
+        context.contentResolver.query(
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            projection, null, null, sortOrder
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+            val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idCol)
+                val uri = Uri.withAppendedPath(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id.toString())
+                result.add(MediaFile(
+                    id = id,
+                    name = cursor.getString(nameCol) ?: "video",
+                    uri = uri,
+                    size = cursor.getLong(sizeCol),
+                    mimeType = cursor.getString(mimeCol) ?: "video/mp4",
+                    dateAdded = cursor.getLong(dateCol),
+                    isVideo = true
+                ))
+            }
+        }
+
+        result.sortedByDescending { it.dateAdded }
+    }
+
     private fun work(start: String, task: suspend () -> String) {
         if (_state.value.busy) return
         viewModelScope.launch {
@@ -491,7 +620,35 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
 
 @Composable private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit, pickVideo: () -> Unit, pickImages: () -> Unit, pickVideos: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
     item { Hero("Media Engine", "Native Bitmap compression and FFmpeg Kit encoding. Your source files never leave the device.") }
-    item { Text("Compression quality", fontWeight = FontWeight.SemiBold); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { CompressionQuality.entries.forEach { FilterChip(selected = state.quality == it, onClick = { vm.quality(it) }, label = { Text(it.label) }) } } }
+    item {
+        Text("Compression quality", fontWeight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CompressionQuality.entries.sortedByDescending { it.ordinal }.forEach { quality ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable { vm.quality(quality) }
+                ) {
+                    RadioButton(
+                        selected = state.quality == quality,
+                        onClick = { vm.quality(quality) },
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(quality.label, fontWeight = FontWeight.Medium)
+                        Text(
+                            if (quality == CompressionQuality.LOW) "JPEG q=55, max 1280px"
+                            else if (quality == CompressionQuality.MEDIUM) "JPEG q=75, max 1920px"
+                            else "JPEG q=90, max 2560px",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
     item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(pickImage, Modifier.weight(1f)) { Icon(Icons.Default.Image, null); Spacer(Modifier.width(6.dp)); Text("Image") }; Button(pickVideo, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Video") } } }
     // Batch is OFF the front face by default — only shown when the user opts in from Settings
     // (prevents surprise gallery writes; AGENTS/privacy guardrail).
@@ -502,6 +659,16 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
     state.mediaResult?.let { result ->
         item { ResultCard("Latest media", result) { vm.shareMedia(result) } }
     }
+    // Your Media section
+    if (state.userMedia.isNotEmpty()) {
+        item { Text("Your media library", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp)) }
+        state.userMedia.take(20).forEach { mediaFile ->
+            item { MediaFileCard(mediaFile, vm) }
+        }
+        if (state.userMedia.size > 20) {
+            item { Text("… and ${state.userMedia.size - 20} more", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp)) }
+        }
+    }
 }
 
 @Composable private fun DocumentsTab(state: UiState, vm: ToolkitViewModel, pickImages: () -> Unit, pickPdf: () -> Unit, pickPdfs: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -510,6 +677,31 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
     item { Card { Column(Modifier.padding(16.dp)) { Text("PDF merge", fontWeight = FontWeight.Bold); Text("${state.mergeUris.size} PDF${if (state.mergeUris.size == 1) "" else "s"} selected", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(pickPdfs) { Text("Choose PDFs") }; Button({ vm.mergePdfFiles() }, enabled = state.mergeUris.isNotEmpty()) { Text("Merge PDFs") } } } } }
     item { Card { Column(Modifier.padding(16.dp)) { Text("PDF inspector & splitter", fontWeight = FontWeight.Bold); Text(state.pdfMetrics?.let { "${it.name} · ${it.pages} pages · ${formatFileSize(it.bytes)}" } ?: "Choose a local PDF to inspect.", fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis); Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(pickPdf) { Text("Choose PDF") }; Button({ vm.splitPdf() }, enabled = state.pdfUri != null) { Text("Split pages") } } } } }
     state.documentOutput?.let { file -> item { smallOutput(file.name, formatFileSize(file.length())) } }
+    
+    // PDF Preview Dialog
+    state.pdfPreview?.let { preview ->
+        item {
+            val context = LocalContext.current
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("PDF Preview", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("${preview.file.name} · ${preview.pageCount} page${if (preview.pageCount == 1) "" else "s"} · ${formatFileSize(preview.file.length())}")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = {
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", preview.file)
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "application/pdf")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            try { context.startActivity(intent) } catch (_: Exception) { vm.showToast("No PDF viewer found") }
+                        }) { Text("Open") }
+                        Button(onClick = preview.onSave) { Text("Save to Gallery") }
+                        OutlinedButton(onClick = preview.onDiscard) { Text("Discard") }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable private fun AiTab(state: UiState, vm: ToolkitViewModel, pickPdf: () -> Unit, pickOcrImage: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -612,6 +804,39 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
 
 @Composable private fun Hero(title: String, body: String) { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) { Column(Modifier.padding(18.dp)) { Text(title, fontWeight = FontWeight.Bold, fontSize = 22.sp); Spacer(Modifier.height(5.dp)); Text(body) } } }
 @Composable private fun ResultCard(label: String, result: MediaResult, share: () -> Unit) { Card { Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(label, fontWeight = FontWeight.Bold); Text(result.name, maxLines = 1, overflow = TextOverflow.Ellipsis); Text("${formatFileSize(result.before)} → ${formatFileSize(result.output.length())}", fontSize = 13.sp) }; IconButton(onClick = share) { Icon(Icons.Default.Share, "Share") } } } }
+
+@Composable private fun MediaFileCard(mediaFile: MediaFile, vm: ToolkitViewModel) {
+    Card(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(56.dp)
+                    .background(
+                        if (mediaFile.isVideo) MaterialTheme.colorScheme.surfaceVariant else ComposeColor.Transparent,
+                        RoundedCornerShape(8.dp)
+                    )
+            ) {
+                if (mediaFile.isVideo) {
+                    Icon(Icons.Default.VideoLibrary, contentDescription = null, modifier = Modifier.align(Alignment.Center).size(28.dp))
+                } else {
+                    val painter = rememberAsyncImagePainter(mediaFile.uri)
+                    androidx.compose.foundation.Image(painter, contentDescription = mediaFile.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(mediaFile.name, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${if (mediaFile.isVideo) "Video" else "Image"} · ${formatFileSize(mediaFile.size)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Button(onClick = { vm.compress(mediaFile.uri, mediaFile.isVideo) }) {
+                Icon(Icons.Default.Compress, contentDescription = null)
+                Spacer(Modifier.width(4.dp))
+                Text("Compress")
+            }
+        }
+    }
+}
+
 @Composable private fun smallOutput(file: String, detail: String) { Card { Column(Modifier.padding(16.dp)) { Text("Document output", fontWeight = FontWeight.Bold); Text(file, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(detail, fontSize = 13.sp) } } }
 @Composable private fun Toggle(label: String, checked: Boolean, set: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(checked, set) } }
 @Composable private fun LoadingOverlay(text: String) { Box(Modifier.fillMaxSize().background(ComposeColor.Black.copy(alpha = .42f)), contentAlignment = Alignment.Center) { Card { Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(28.dp)); Spacer(Modifier.width(16.dp)); Text(text, fontWeight = FontWeight.SemiBold) } } } }
@@ -716,7 +941,7 @@ suspend fun readPdfMetrics(context: Context, uri: Uri): PdfMetrics = withContext
 // ---- PDF split (kept on android.graphics.pdf: renders each page to a bitmap PDF) ----
 suspend fun splitPdfIntoPages(context: Context, uri: Uri): List<File> = withContext(Dispatchers.IO) {
     val descriptor = requireNotNull(context.contentResolver.openFileDescriptor(uri, "r")) { "Unable to open PDF." }
-    descriptor.use { PdfRenderer(it).use { renderer -> (0 until renderer.pageCount).map { index -> renderer.openPage(index).use { source -> val scale = minOf(1f, 2048f / maxOf(source.width, source.height)); val width = (source.width * scale).toInt().coerceAtLeast(1); val height = (source.height * scale).toInt().coerceAtLeast(1); val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888); source.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY); val doc = PdfDocument(); try { val page = doc.startPage(PdfDocument.PageInfo.Builder(width, height, 1).create()); page.canvas.drawColor(Color.WHITE); page.canvas.drawBitmap(bitmap, 0f, 0f, null); doc.finishPage(page); File(context.cacheDir, "split_page_${index + 1}_${System.currentTimeMillis()}.pdf").also { FileOutputStream(it).use(doc::writeTo) } } finally { doc.close(); bitmap.recycle() } } } } }
+    descriptor.use { PdfRenderer(it).use { renderer -> (0 until renderer.pageCount).map { index -> renderer.openPage(index).use { source -> val scale = minOf(1f, 2048f / maxOf(source.width, source.height)); val width = (source.width * scale).toInt().coerceAtLeast(1); val height = (source.height * scale).toInt().coerceAtLeast(1); val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888); source.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY); val doc = PdfDocument(); try { val page = doc.startPage(PdfDocument.PageInfo.Builder(width, height, 1).create()); page.canvas.drawColor(android.graphics.Color.WHITE); page.canvas.drawBitmap(bitmap, 0f, 0f, null); doc.finishPage(page); File(context.cacheDir, "split_page_${index + 1}_${System.currentTimeMillis()}.pdf").also { FileOutputStream(it).use(doc::writeTo) } } finally { doc.close(); bitmap.recycle() } } } } }
 }
 
 // ---- PDF embedded-text extraction (iText: reads real, compressed PDF text streams) ----
@@ -729,12 +954,10 @@ suspend fun extractRawTextFromUri(context: Context, uri: Uri): String = withCont
             try {
                 val sb = StringBuilder()
                 for (pageNum in 1..pdf.numberOfPages) {
-                    val pageText = PdfTextExtractor.getTextFromPage(
-                        pdf.getPage(pageNum),
-                        SimpleTextExtractionStrategy()
-                    )
+                    val strategy = LocationTextExtractionStrategy()
+                    val pageText = PdfTextExtractor.getTextFromPage(pdf.getPage(pageNum), strategy)
                     if (pageText.isNotBlank()) {
-                        if (sb.isNotEmpty()) sb.append("\n\n")
+                        if (sb.isNotEmpty()) sb.append("\n\n--- Page $pageNum ---\n\n")
                         sb.append(pageText.trim())
                     }
                 }
