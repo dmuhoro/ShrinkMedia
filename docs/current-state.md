@@ -19,8 +19,8 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C6 | Battery-aware pause/resume (opt-in) | ⚠️ | Controller + receiver; instrumented `BatchPauseContractTest` proves the pause gate never drops an item (compiles); **device run Sprint 8** |
 | C7 | Autosave to MediaStore (opt-in, no permission) | ⚠️ | `saveToPublicMediaStore` returns Boolean; instrumented test covers insert (compiles); **device run Sprint 8** |
 | C8 | DataStore settings persistence | ✅ | `SettingsRepository` flow; additive keys; fail-closed defaults |
-| C9 | PDF build / merge / split / metrics | ⚠️ | `android.graphics.pdf`; **device run Sprint 8** |
-| C10 | PDF embedded-text extraction | ⚠️ | Heuristic; scanned PDFs report "needs OCR" honestly; **device run Sprint 8** |
+| C9 | PDF build / merge / split / metrics | ✅ | iText 7.2.5 (on-device, no INTERNET); `createPdfFromImages` (vector pages via `AreaBreak`), `mergePdfDocuments` (temp-file + `copyPagesTo`), `splitPdfIntoPages` (kept on `android.graphics.pdf` for bitmap fallback), `readPdfMetrics` (`PdfRenderer`); **device run PASS** |
+| C10 | PDF embedded-text extraction | ✅ | iText `PdfTextExtractor` + `SimpleTextExtractionStrategy` (temp-file + `PdfReader(File)`); honest "scan / OCR needed" when no embedded text; **device run PASS** |
 | C11 | AICore device-model handoff | **ASPIRATIONAL** | `AiTab` placeholder only — no AICore dependency, no availability check (D001); staged as v2 (ADR-010) |
 | C12 | Real OCR (scanned PDFs/images) | ✅ | Implemented (ADR-009): ML Kit `text-recognition` via `OcrHelper` (typed-null, no INTERNET), `AiTab` "Scan reader"; **device walkthrough PASS** (reads "SHRINKMEDI" on API 36); R8-verified |
 | C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.3.0) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`); `apksigner verify` PASS on `app-release.apk` **signed with the production keystore** (`~/.android/keystores/shrinkmedia-release.jks`, gitignored `keystore.properties`); distributed via GitHub sideload |

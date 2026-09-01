@@ -21,13 +21,18 @@ the UI.
 │    ToolkitViewModel (AndroidViewModel)                                      │
 │      collects settings.userSettingsFlow → UiState                           │
 │      delegates work() to engine helpers on Dispatchers.IO                   │
-├──────────────┬───────────────────────────────┬──────────────────────────────┤
-│  MEDIA ENG.  │  DOCUMENT ENG.                │  SETTINGS / QUEUE             │
-│  compressImageFile (BitmapFactory sampling)  │  SettingsRepository          │
-│  compressVideoFile (FFmpegKit async session) │    (DataStore Preferences)   │
-│  saveToPublicMediaStore (MediaStore insert)  │  BatchCompressionPauseController
-│              └── foreground batch path ──►   │  BatchCompressionService      │
-└──────────────┴───────────────────────────────┴──────────────────────────────┘
+├──────────────┬────────────────────────────────────────────┬──────────────────────────────┤
+│  MEDIA ENG.  │  DOCUMENT ENG. (iText 7)                   │  SETTINGS / QUEUE             │
+│  compressImageFile (BitmapFactory sampling)  │  createPdfFromImages (vector) │
+│  compressVideoFile (FFmpegKit async session) │  mergePdfDocuments (page-exact) │
+│  saveToPublicMediaStore (MediaStore insert)  │  extractRawTextFromUri (iText) │
+│              └── foreground batch path ──►   │  readPdfMetrics (PdfRenderer) │
+│                                              │  splitPdfIntoPages (bitmap)    │
+│                                              │  SettingsRepository            │
+│                                              │    (DataStore Preferences)     │
+│                                              │  BatchCompressionPauseController
+│                                              │  BatchCompressionService       │
+└──────────────┴────────────────────────────────────────────┴──────────────────────────────┘
                       │ all on-device, no INTERNET permission
 ┌──────────────────────────────  WEB SIMULATOR  ──────────────────────────────┐
 │ Vite + React + TS + Tailwind  (phone-frame preview + code tabs + lib/)      │
@@ -68,10 +73,8 @@ the UI.
 
 ## Known Gaps
 
-- **No instrumentation tests on a device yet** (JVM-verified helpers exist).
 - **AICore handoff** is ASPIRATIONAL — `AiTab` describes it, nothing ships
-  (staged v2, ADR-010). **OCR is implemented** (ADR-009: ML Kit via
-  `OcrHelper`, typed-null, no INTERNET) pending the Sprint 8 device run.
+  (staged v2, ADR-010).
 - **Web simulator** compresses with simulated numbers — it previews native
   behaviour, it does not reprocess real bytes (ADR-006).
 - History/audit detail lives in the in-memory UI list; only cumulative totals

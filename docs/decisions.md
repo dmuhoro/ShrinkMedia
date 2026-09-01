@@ -44,6 +44,21 @@ would desync progress from the actual queue.
 
 ---
 
+## D005 — iText temp-file pattern for reliable Android random access (ACCEPTED)
+
+- **Date:** 2026-09-01 • **Decider:** Daniel Muhoro
+
+`PdfReader` constructors in iText 7's Android AAR do not accept `byte[]`
+directly (the `RandomAccessSourceFactory.createBestSource(byte[])` overload is
+unavailable). The reliable pattern is: write each input `Uri` to a temp file in
+the app cache dir → `PdfReader(File)` → operate (`copyPagesTo`,
+`PdfTextExtractor`) → delete temp file. This applies to `mergePdfDocuments`
+and `extractRawTextFromUri`. `createPdfFromImages` avoids the issue by building
+from bitmaps in memory (single `Document` + `AreaBreak` per page). The pattern
+is fail-closed: any I/O failure returns `null`/empty and is surfaced to the UI.
+
+---
+
 ## Superseded
 
 - None yet. When an ADR supersedes a D-entry, the entry is marked `SUPERSEDED`

@@ -28,6 +28,9 @@
 | 7 — Test hardening & release config | Launcher icon + label, v0.2.1 | `res/mipmap-*`/`drawable`/`values/colors.xml`; manifest; aapt badging label | ✅ Verified |
 | 7 — Test hardening & release config | CI on Node-24 actions + signed release-AAB job | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7); release job fail-closed on secrets | ✅ Verified (YAML parses, build path validated) |
 | 8 — Device verification (PLAN) | Real-path instrumented suite on a device; battery/autosave walkthroughs | Not yet executed — final release gate | ⚠️ Planned |
+| 9 — OCR + no-silent-drops | On-device OCR (ML Kit) + `BatchFailureAudit` | `OcrHelper.kt`, `BatchFailureAudit.kt`, `AiTab` Scan reader; `connectedDebugAndroidTest` 9/9 PASS (`docs/evidence/2026-08-31_device_verification.md`) | ✅ Verified on hardware |
+| 10 — v0.3.0 signed release | Production keystore + signed APK + GitHub Release | `keystore.properties` + `app-release.apk` (`apksigner verify` PASS); Release `v0.3.0` attached | ✅ Verified |
+| 11 — PDF compile fixes + UI polish | iText 7 PDF engine + recent/settings/theme + R8 proguard fix | `MainActivity.kt` (iText), `SettingsDataStore.kt`, `OcrHelper.kt`, `proguard-rules.pro`; all 6 Android gates green (`docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md`) | ✅ Verified |
 
 ## Rules That Keep This Honest
 

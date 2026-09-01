@@ -4,6 +4,26 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.3.1 — PDF iText pipeline + UI polish (2026-09-01, Sprint 11)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| `createPdfFromImages` uses iText 7 (vector pages, `AreaBreak`) | PASS | `MainActivity.kt`; `compileDebugKotlin` PASS; `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `mergePdfDocuments` uses temp-file + `PdfReader(File)` + `copyPagesTo` | PASS | `MainActivity.kt`; temp files cleaned up; `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `extractRawTextFromUri` uses iText `PdfTextExtractor` (honest "scan" message) | PASS | `MainActivity.kt`; temp-file pattern; `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| Import conflict `Image` vs `ITextImage` resolved | PASS | Alias `ITextImage` in `MainActivity.kt` imports |
+| R8 proguard rule for `org.slf4j.impl.StaticLoggerBinder` | PASS | `app/proguard-rules.pro`; `assembleRelease` PASS |
+| Recent files UI: expandable cards, audit detail, Share, Delete (5s undo), Clear | PASS | `RecentSection`, `AuditDetailPanel`, `ResultCard` in `MainActivity.kt` |
+| SettingsSheet: Theme (System/Light/Dark), OCR Language (6), Batch toggle, Autosave, Pause-on-low-battery | PASS | `SettingsSheet` composable; DataStore additive keys |
+| OCR language selection (EN/FR/DE/ES/IT/PT) persisted via DataStore | PASS | `OcrLanguage` enum + `ocr_language` key; `recognizeText` 3-arg form |
+| `compileDebugKotlin` | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `testDebugUnitTest` | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `assembleDebug` | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `compileDebugAndroidTestKotlin` | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `assembleRelease` (R8 minify) | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| `lintDebug` | PASS | `docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md` |
+| Device install + launch (API 36) — no crashes | PASS | `adb install` + `am start` + logcat clean |
+
 ## Gate: v0.3.0 signed release + distribution (2026-08-31, Sprint 10)
 
 | Item | Status | Evidence |
