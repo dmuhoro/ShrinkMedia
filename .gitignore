@@ -22,6 +22,9 @@ htmlcov/
 *.db-wal
 *.class
 *.apk
+
+# Vercel local link/auth (org/project ids pass through secrets in CI)
+.vercel/
 # Signing keystores + credentials (FAIL CLOSED: never commit these)
 keystore.properties
 *.jks
