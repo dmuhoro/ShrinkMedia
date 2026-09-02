@@ -90,6 +90,24 @@ selection (fail-closed: no request is ever built without a guarded path).
 
 ---
 
+## D008 — Public web presence: Vercel deploy + GitHub metadata, fail-closed auto-deploy (ACCEPTED)
+
+- **Date:** 2026-09-02 • **Decider:** Daniel Muhoro
+
+The web simulator (ADR-006 harness) is deployed to **Vercel** at
+`https://shrinkmedia.vercel.app` — a public, honest interactive preview of the
+native toolkit. It is a **pure static front-end** (no network calls, no runtime
+secrets) and stays separate from the no-INTERNET Android app. CI auto-deploy
+(`deploy-web.yml`) runs the quality gates first and deploys **only if**
+`VERCEL_TOKEN/ORG_ID/PROJECT_ID` secrets are present — absent secrets ⇒ gates
+still pass, no deploy (fail-closed: the live site is never broken or silently
+altered by a push). The on-device privacy invariant is untouched. Deliberately
+descoped here (Constitution Article VIII): custom domain, OG social-card image,
+a dedicated marketing landing, and Play-store listing remain queued in
+`docs/ideas.md`.
+
+---
+
 ## Superseded
 
 - None yet. When an ADR supersedes a D-entry, the entry is marked `SUPERSEDED`

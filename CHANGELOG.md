@@ -5,6 +5,57 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.4.0] — 2026-09-02 (web presence; native stays 0.5.0)
+
+Public web presence: the web simulator is live on **Vercel** at
+`shrinkmedia.vercel.app`, the GitHub repo got a professional description,
+homepage link, and topics, and the README is productized. The deployed site is
+the honest ADR-006 web-simulator harness — a pure static front-end, no network
+calls, separate from the no-INTERNET Android app.
+
+> Version note: the Android app remains **v0.5.0**. The web simulator package
+> is versioned independently and is now at **0.4.0**. No native APK/version
+> bump shipped in this sprint — this sprint is product-toward-world, not a
+> release.
+
+### Added
+- **Vercel deploy** — `vercel.json` (vite framework, `outputDirectory dist`,
+  SPA fallback), `.vercelignore` (lean upload, excludes `.git/.github/`
+  `node_modules`/`dist`/`build`/`app`/`docs` and all keystore/secret material).
+  Production URL: **https://shrinkmedia.vercel.app** (HTTP 200, correct
+  title/description/favicon, SPA fallback verified).
+- **SEO/meta + favicon** (`index.html`, `public/favicon.svg`): descriptive
+  title/description, `og:site_name`, twitter meta, `theme-color`, favicon.
+- **GitHub metadata** (repo-level): one-line description, homepage =
+  `https://shrinkmedia.vercel.app`, **20 topics** (android, kotlin,
+  jetpack-compose, media/image/video-compression, ffmpeg, pdf-tools, ocr,
+  machine-learning, privacy, on-device, offline-first, mediastore, datastore,
+  react, typescript, web-simulator, vercel, github-actions).
+- **README productized**: live-site link + "Live Site" section, badges (vercel /
+  MIT / kotlin / PRs), status rows for the v0.5.0 features and live presence,
+  web build/run/deploy instructions.
+- **CI auto-deploy** (`.github/workflows/deploy-web.yml`): gates-then-deploy,
+  **fail-closed** on `VERCEL_TOKEN/ORG_ID/PROJECT_ID` — absent secrets ⇒ gates
+  still pass, no deploy; path-scoped to web sources.
+- **Docs**: Sprint 14 record + evidence; `docs/decisions.md` D008; web-simulator
+  runbook deploy steps; `docs/current-state.md` C20; `docs/architecture.md`;
+  `docs/sprint-cross-reference.md` Sprint 14 row.
+
+### Changed
+- Web package bumped to `0.4.0` (`package.json`/`package-lock.json`).
+
+### Fixed
+- None (no native code change; Android regression gates
+  `compileDebugKotlin` + `testDebugUnitTest` re-run green).
+
+### Note
+- Privacy invariant held: deployed surface is a static web harness; the native
+  app manifest still declares **no INTERNET permission** (CI guardrail enforces).
+- Honest gap: CI auto-deploy is code-complete and fail-closed; it will only
+  actually push to Vercel once the `VERCEL_*` secrets are set as GitHub secrets.
+  Until then, deploys are manual (`vercel --prod --yes`).
+- Evidence: `docs/evidence/2026-09-02_public_web_presence.md`.
+
 ## [0.5.0] — 2026-09-02
 
 Identity + space-reclaim + first-run guidance: the app's launcher label is now

@@ -75,7 +75,7 @@ the UI.
 | UI shell | `app/.../MainActivity.kt` | Tabs, state, pickers, engine helpers; MediaTab media gallery (`getUserMediaFiles`/`MediaFileCard`, vertical quality radio UX, multi-select **Select/Delete** via `MediaStore.createDeleteRequest` consent + first-run onboarding card); DocumentsTab PDF preview (`PdfPreviewState`); `LocationTextExtractionStrategy` extraction |
 | Settings | `app/.../SettingsDataStore.kt` | `PersistedUserSettings`, repository (additive `ONBOARDING_DISMISSED` key; fail-closed defaults) |
 | Batch queue | `app/.../BatchCompressionService.kt` | Foreground loop + pause controller + battery receiver |
-| Simulator | `src/App.tsx` | Web preview + code tabs |
+| Simulator | `src/App.tsx` | Web preview + code tabs; deployed as a static SPA on Vercel (`vercel.json`, `.vercelignore`; `shrinkmedia.vercel.app`) |
 | Simulator lib | `src/lib/*` | Pure helpers (testable) |
 
 ## Quality Presets (single source of truth: `CompressionQuality`)
