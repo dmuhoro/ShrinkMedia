@@ -4,6 +4,15 @@
 > on-device text recognition (OCR). Every byte is processed **on-device**; the
 > app declares **no INTERNET permission**.
 
+**Live site:** [shrinkmedia.vercel.app](https://shrinkmedia.vercel.app) — an
+honest, interactive preview of the native toolkit (ADR-006 web-simulator
+harness; simulated numbers, separate from the no-INTERNET Android app).
+
+[![Vercel](https://img.shields.io/badge/Live%20site-shrinkmedia.vercel.app-black?logo=vercel&logoColor=white)](https://shrinkmedia.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/Android-Kotlin%20%2B%20Compose-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 ## Status
 
 | Capability | Tracked in | Status |
@@ -16,7 +25,9 @@
 | PDF merge / split / build / text extract | `docs/current-state.md` | ✅ Implemented |
 | On-device OCR (ML Kit, scanned text) | `docs/current-state.md` | ✅ Implemented & **device-verified** (reads "SHRINKMEDI" on API 36) |
 | Batch failure surfacing + on-device audit log | `docs/current-state.md` | ✅ Implemented & **device-verified** |
-| Web simulator (Vite + React + TS) | `docs/current-state.md` | ✅ Implemented & verified |
+| Web simulator (Vite + React + TS) | `docs/current-state.md` | ✅ Implemented, verified, **live on Vercel** |
+| App rename + media delete + first-run onboarding | `docs/current-state.md` | ✅ v0.5.0, **device-verified** label/onboarding render |
+| Live web presence (Vercel + GitHub metadata) | `docs/current-state.md` | ✅ Sprint 14, `shrinkmedia.vercel.app` |
 | AICore local-model handoff | `docs/current-state.md` | ⚠️ ASPIRATIONAL (staged v2, ADR-010) |
 
 > Honesty over optimism: implemented means code + verification; ASPIRATIONAL
@@ -24,6 +35,15 @@
 > real instrumented pipeline passed on an API-36 phone
 > (`docs/evidence/2026-08-31_device_verification.md`). Nothing is marked done
 > on narrative alone (Constitution Article VII).
+
+## Live Site
+
+The browser simulator is deployed as a static SPA on **Vercel**:
+**[shrinkmedia.vercel.app](https://shrinkmedia.vercel.app)**. It mirrors the
+native toolkit (phone-frame preview, code tabs, honest batch/savings model)
+and is the marketing surface for the Android app. It makes **no network calls
+and reads no runtime secrets** — a pure static front-end. The community repo
+is [dmuhoro/ShrinkMedia](https://github.com/dmuhoro/ShrinkMedia).
 
 ## What It Does
 
@@ -93,7 +113,19 @@ npm run dev        # http://localhost:3000
 npm run lint       # tsc --noEmit
 npm test           # Vitest
 npm run build      # production bundle
+npm run preview    # serve the production bundle locally
 ```
+
+Deploy to Vercel production with the CLI (lean upload via `.vercelignore`,
+config in `vercel.json`):
+
+```bash
+vercel --prod --yes      # production build → dist/ → shrinkmedia.vercel.app
+```
+
+CI auto-deploys on push to `main` when the `VERCEL_*` secrets are configured
+(fail-closed: without them, only the quality gates run — see
+`.github/workflows/deploy-web.yml`).
 
 ## Governance
 
