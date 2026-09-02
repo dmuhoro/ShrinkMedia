@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+dist
+build
+app
+.gradle
+.kotlin
+docs
+src/test
+*.jks
+*.keystore
+keystore.properties
+local.properties
