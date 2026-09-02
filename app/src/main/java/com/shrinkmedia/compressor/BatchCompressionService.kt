@@ -251,7 +251,7 @@ class BatchCompressionService : Service() {
     private fun buildProgressNotification(current: Int, total: Int, message: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("Media Compressor")
+            .setContentTitle("ShrinkMedia")
             .setContentText(message)
             .setSubText(if (total > 0) "$current / $total" else null)
             .setProgress(total, current, total == 0)

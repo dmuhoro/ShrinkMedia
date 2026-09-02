@@ -895,7 +895,7 @@ export default function App() {
             <Smartphone className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-white tracking-tight">Media Compressor</h1>
+            <h1 className="text-base font-semibold text-white tracking-tight">ShrinkMedia</h1>
             <p className="text-xs text-neutral-400">Foreground Service • DataStore Persistence • 5s Trash Undo • Audit Summary</p>
           </div>
         </div>
@@ -976,7 +976,7 @@ export default function App() {
                 <div className={`px-5 py-2 flex items-center justify-between border-b ${
                   isDarkMode ? 'border-neutral-800' : 'border-purple-100'
                 }`}>
-                  <span className={`font-bold text-base ${isDarkMode ? 'text-white' : 'text-[#1D1B20]'}`}>Media Compressor</span>
+                  <span className={`font-bold text-base ${isDarkMode ? 'text-white' : 'text-[#1D1B20]'}`}>ShrinkMedia</span>
                   <div className="flex items-center gap-1">
                     <button
                       id="sim-open-audit-btn"
