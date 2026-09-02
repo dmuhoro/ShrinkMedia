@@ -1,6 +1,8 @@
 package com.shrinkmedia.compressor
 
+import android.app.Activity
 import android.app.Application
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -13,6 +15,7 @@ import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.OpenableColumns
@@ -21,8 +24,10 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -145,6 +150,9 @@ data class UiState(
     val recent: List<RecentCompression> = emptyList(),
     val pendingDeletion: PendingDeletion? = null,
     val userMedia: List<MediaFile> = emptyList(),
+    val mediaSelecting: Boolean = false,
+    val mediaSelection: Set<Long> = emptySet(),
+    val onboardingDismissed: Boolean = false,
     val pdfPreview: PdfPreviewState? = null
 )
 
@@ -177,6 +185,7 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
                         themeMode = saved.themeMode,
                         ocrLanguage = OcrLanguage.fromKey(saved.ocrLanguage),
                         enableBatch = saved.enableBatch,
+                        onboardingDismissed = saved.onboardingDismissed,
                         totalSavedBytes = saved.totalHistoricalSavedBytes,
                         totalFiles = saved.totalHistoricalFilesCount
                     )
@@ -448,8 +457,74 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
     fun loadUserMedia() = work("Loading your media…") {
         val context = getApplication<Application>().applicationContext
         val mediaFiles = getUserMediaFiles(context)
-        _state.update { it.copy(userMedia = mediaFiles) }
+        _state.update { it.copy(userMedia = mediaFiles, mediaSelection = emptySet()) }
         "Loaded ${mediaFiles.size} media files"
+    }
+
+    fun dismissOnboarding() {
+        _state.update { it.copy(onboardingDismissed = true) }
+        viewModelScope.launch { settings.updateOnboardingDismissed(true) }
+    }
+
+    // ----- Media library multi-select delete (user-consented, fail-closed) -----
+    fun toggleMediaSelecting() = _state.update { it.copy(mediaSelecting = !it.mediaSelecting, mediaSelection = emptySet()) }
+    fun toggleMediaSelection(id: Long) = _state.update { st ->
+        val next = if (st.mediaSelection.contains(id)) st.mediaSelection - id else st.mediaSelection + id
+        st.copy(mediaSelection = next)
+    }
+
+    /** API 30+: build the system user-consent delete pending intent for the selected URIs (null on older APIs). */
+    fun buildDeleteRequest(selectedFiles: List<MediaFile>): PendingIntent? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || selectedFiles.isEmpty()) return null
+        val context = getApplication<Application>().applicationContext
+        return MediaStore.createDeleteRequest(context.contentResolver, selectedFiles.map { it.uri })
+    }
+
+    /** Remove the selected items from the local list. Caller must have obtained user consent. */
+    fun applyMediaDeletion(selectedFiles: List<MediaFile>, resultCode: Int) {
+        if (resultCode != Activity.RESULT_OK) {
+            _state.update { it.copy(mediaSelecting = false, mediaSelection = emptySet()) }
+            _toast.tryEmit("Delete cancelled — no files were changed")
+            return
+        }
+        val removedIds = selectedFiles.map { it.id }.toSet()
+        val removed = _state.value.userMedia.count { m -> removedIds.contains(m.id) }
+        _state.update {
+            it.copy(
+                userMedia = it.userMedia.filterNot { m -> removedIds.contains(m.id) },
+                mediaSelection = emptySet(),
+                mediaSelecting = false
+            )
+        }
+        _toast.tryEmit(if (removed == 0) "Deleted — nothing was removed from the library" else "Deleted $removed item${if (removed == 1) "" else "s"} from your library")
+    }
+
+    /** API < 30 fallback: direct MediaStore delete; surfaces failure honestly (no silent drop). */
+    fun deleteLegacy(selectedFiles: List<MediaFile>) {
+        val context = getApplication<Application>().applicationContext
+        var deleted = 0
+        var failure: String? = null
+        selectedFiles.forEach { file ->
+            val rows = runCatching {
+                context.contentResolver.delete(file.uri, "${MediaStore.MediaColumns._ID}=?", arrayOf(file.id.toString()))
+            }
+            if (rows.getOrNull() == 1) deleted++ else failure = rows.exceptionOrNull()?.message
+        }
+        val ids = selectedFiles.map { it.id }.toSet()
+        _state.update {
+            it.copy(
+                userMedia = it.userMedia.filterNot { m -> ids.contains(m.id) },
+                mediaSelection = emptySet(),
+                mediaSelecting = false
+            )
+        }
+        _toast.tryEmit(
+            when {
+                deleted == selectedFiles.size -> "Deleted $deleted item${if (deleted == 1) "" else "s"} from your library"
+                deleted > 0 -> "Deleted $deleted of ${selectedFiles.size} items${failure?.let { " ($it)" } ?: ""}"
+                else -> "Could not delete (${failure ?: "storage permission required"})"
+            }
+        )
     }
 
     /** Query MediaStore for images and videos, return combined list sorted by dateAdded desc. */
@@ -618,56 +693,120 @@ fun ThemeWrapper(mode: AppThemeMode, content: @Composable () -> Unit) {
 
 private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.Default.PermMedia; ToolkitTab.DOCUMENTS -> Icons.Default.PictureAsPdf; ToolkitTab.AI -> Icons.Default.AutoAwesome }
 
-@Composable private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit, pickVideo: () -> Unit, pickImages: () -> Unit, pickVideos: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-    item { Hero("Media Engine", "Native Bitmap compression and FFmpeg Kit encoding. Your source files never leave the device.") }
-    item {
-        Text("Compression quality", fontWeight = FontWeight.SemiBold)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CompressionQuality.entries.sortedByDescending { it.ordinal }.forEach { quality ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable { vm.quality(quality) }
-                ) {
-                    RadioButton(
-                        selected = state.quality == quality,
-                        onClick = { vm.quality(quality) },
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                    Column(Modifier.weight(1f)) {
-                        Text(quality.label, fontWeight = FontWeight.Medium)
-                        Text(
-                            if (quality == CompressionQuality.LOW) "JPEG q=55, max 1280px"
-                            else if (quality == CompressionQuality.MEDIUM) "JPEG q=75, max 1920px"
-                            else "JPEG q=90, max 2560px",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+@Composable
+private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit, pickVideo: () -> Unit, pickImages: () -> Unit, pickVideos: () -> Unit) {
+    var pendingDelete by remember { mutableStateOf<List<MediaFile>?>(null) }
+    val deleteLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        val files = pendingDelete
+        pendingDelete = null
+        if (files != null) vm.applyMediaDeletion(files, result.resultCode)
+    }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { Hero("Media Engine", "Native Bitmap compression and FFmpeg Kit encoding. Your source files never leave the device.") }
+        if (!state.onboardingDismissed) {
+            item {
+                Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Get to know ShrinkMedia", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("• Private by design — images, videos and PDFs are processed on-device. The app declares no INTERNET permission.", fontSize = 13.sp)
+                    Text("• Compress a file, then find the smaller copy under Recent compressions. Enable auto-save in Settings to also write it to your gallery.", fontSize = 13.sp)
+                    Text("• Free up space — tap Select next to “Your media library”, choose originals you compressed, and delete them (with confirmation).", fontSize = 13.sp)
+                    TextButton(onClick = { vm.dismissOnboarding() }, modifier = Modifier.align(Alignment.End)) { Text("Got it") }
+                } }
+            }
+        }
+        item {
+            Text("Compression quality", fontWeight = FontWeight.SemiBold)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CompressionQuality.entries.sortedByDescending { it.ordinal }.forEach { quality ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { vm.quality(quality) }
+                    ) {
+                        RadioButton(
+                            selected = state.quality == quality,
+                            onClick = { vm.quality(quality) },
+                            modifier = Modifier.padding(end = 12.dp)
                         )
+                        Column(Modifier.weight(1f)) {
+                            Text(quality.label, fontWeight = FontWeight.Medium)
+                            Text(
+                                if (quality == CompressionQuality.LOW) "JPEG q=55, max 1280px"
+                                else if (quality == CompressionQuality.MEDIUM) "JPEG q=75, max 1920px"
+                                else "JPEG q=90, max 2560px",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-    item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(pickImage, Modifier.weight(1f)) { Icon(Icons.Default.Image, null); Spacer(Modifier.width(6.dp)); Text("Image") }; Button(pickVideo, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Video") } } }
-    // Batch is OFF the front face by default — only shown when the user opts in from Settings
-    // (prevents surprise gallery writes; AGENTS/privacy guardrail).
-    if (state.enableBatch) {
-        item { Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Batch mode", fontWeight = FontWeight.Bold); Text("Enabled from Settings. Batch compressions run as a foreground service.", fontSize = 13.sp); Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedButton(pickImages, Modifier.weight(1f)) { Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Images") }; OutlinedButton(pickVideos, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Videos") } } } } }
-    }
-    item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.padding(16.dp)) { Text("Lifetime savings", fontWeight = FontWeight.SemiBold, fontSize = 13.sp); Text("${formatFileSize(state.totalSavedBytes)} recovered across ${state.totalFiles} file${if (state.totalFiles == 1L) "" else "s"}", fontSize = 15.sp) } } }
-    state.mediaResult?.let { result ->
-        item { ResultCard("Latest media", result) { vm.shareMedia(result) } }
-    }
-    // Your Media section
-    if (state.userMedia.isNotEmpty()) {
-        item { Text("Your media library", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp)) }
-        state.userMedia.take(20).forEach { mediaFile ->
-            item { MediaFileCard(mediaFile, vm) }
+        item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(pickImage, Modifier.weight(1f)) { Icon(Icons.Default.Image, null); Spacer(Modifier.width(6.dp)); Text("Image") }; Button(pickVideo, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Video") } } }
+        // Batch is OFF the front face by default — only shown when the user opts in from Settings
+        // (prevents surprise gallery writes; AGENTS/privacy guardrail).
+        if (state.enableBatch) {
+            item { Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Batch mode", fontWeight = FontWeight.Bold); Text("Enabled from Settings. Batch compressions run as a foreground service.", fontSize = 13.sp); Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedButton(pickImages, Modifier.weight(1f)) { Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Images") }; OutlinedButton(pickVideos, Modifier.weight(1f)) { Icon(Icons.Default.VideoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Batch Videos") } } } } }
         }
-        if (state.userMedia.size > 20) {
-            item { Text("… and ${state.userMedia.size - 20} more", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp)) }
+        item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.padding(16.dp)) { Text("Lifetime savings", fontWeight = FontWeight.SemiBold, fontSize = 13.sp); Text("${formatFileSize(state.totalSavedBytes)} recovered across ${state.totalFiles} file${if (state.totalFiles == 1L) "" else "s"}", fontSize = 15.sp) } } }
+        state.mediaResult?.let { result ->
+            item { ResultCard("Latest media", result) { vm.shareMedia(result) } }
         }
+        // Your Media section
+        if (state.userMedia.isNotEmpty()) {
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Your media library", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                    TextButton(onClick = { vm.toggleMediaSelecting() }) { Text(if (state.mediaSelecting) "Done" else "Select") }
+                }
+            }
+            if (state.mediaSelecting) {
+                val selectedFiles = state.userMedia.filter { state.mediaSelection.contains(it.id) }
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("${state.mediaSelection.size} selected", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Spacer(Modifier.weight(1f))
+                            TextButton(onClick = { vm.toggleMediaSelecting() }) { Text("Cancel") }
+                            Button(
+                                onClick = { if (selectedFiles.isNotEmpty()) pendingDelete = selectedFiles },
+                                enabled = selectedFiles.isNotEmpty(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Delete")
+                            }
+                        }
+                    }
+                }
+            }
+            state.userMedia.take(20).forEach { mediaFile ->
+                item { MediaFileCard(mediaFile, vm, selecting = state.mediaSelecting, selected = state.mediaSelection.contains(mediaFile.id)) }
+            }
+            if (state.userMedia.size > 20) {
+                item { Text("… and ${state.userMedia.size - 20} more", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp)) }
+            }
+        }
+    }
+    pendingDelete?.let { files ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete ${files.size} item${if (files.size == 1) "" else "s"}?") },
+            text = { Text("The selected original file${if (files.size == 1) " is" else "s are"} permanently deleted from your device, freeing storage. Your compressed copies in app storage are not affected.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val toDelete = pendingDelete
+                    pendingDelete = null
+                    if (toDelete != null) {
+                        val pending = vm.buildDeleteRequest(toDelete)
+                        if (pending != null) deleteLauncher.launch(IntentSenderRequest.Builder(pending.intentSender).build()) else vm.deleteLegacy(toDelete)
+                    }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
+        )
     }
 }
 
@@ -805,9 +944,15 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
 @Composable private fun Hero(title: String, body: String) { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) { Column(Modifier.padding(18.dp)) { Text(title, fontWeight = FontWeight.Bold, fontSize = 22.sp); Spacer(Modifier.height(5.dp)); Text(body) } } }
 @Composable private fun ResultCard(label: String, result: MediaResult, share: () -> Unit) { Card { Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(label, fontWeight = FontWeight.Bold); Text(result.name, maxLines = 1, overflow = TextOverflow.Ellipsis); Text("${formatFileSize(result.before)} → ${formatFileSize(result.output.length())}", fontSize = 13.sp) }; IconButton(onClick = share) { Icon(Icons.Default.Share, "Share") } } } }
 
-@Composable private fun MediaFileCard(mediaFile: MediaFile, vm: ToolkitViewModel) {
-    Card(Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+@Composable private fun MediaFileCard(mediaFile: MediaFile, vm: ToolkitViewModel, selecting: Boolean = false, selected: Boolean = false) {
+    Card(Modifier.fillMaxWidth(), border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null, colors = if (selected) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer) else CardDefaults.cardColors()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = selecting) { vm.toggleMediaSelection(mediaFile.id) }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 Modifier
                     .size(56.dp)
@@ -828,10 +973,17 @@ private fun tabIcon(tab: ToolkitTab) = when (tab) { ToolkitTab.MEDIA -> Icons.De
                 Text(mediaFile.name, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("${if (mediaFile.isVideo) "Video" else "Image"} · ${formatFileSize(mediaFile.size)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Button(onClick = { vm.compress(mediaFile.uri, mediaFile.isVideo) }) {
-                Icon(Icons.Default.Compress, contentDescription = null)
-                Spacer(Modifier.width(4.dp))
-                Text("Compress")
+            if (selecting) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = { vm.toggleMediaSelection(mediaFile.id) }
+                )
+            } else {
+                Button(onClick = { vm.compress(mediaFile.uri, mediaFile.isVideo) }) {
+                    Icon(Icons.Default.Compress, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Compress")
+                }
             }
         }
     }
