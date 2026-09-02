@@ -40,4 +40,12 @@ class CompressionQualityUnitTest {
         assertEquals("1 MB", formatFileSize(1024L * 1024L))
         assertEquals("1 GB", formatFileSize(1024L * 1024L * 1024L))
     }
+
+    @Test
+    fun onboardingDismissedDefaultsToFalseFailClosed() {
+        // New additive settings must default safely: onboarding tips show (not dismissed)
+        // until the user explicitly dismisses them.
+        assertEquals(false, PersistedUserSettings().onboardingDismissed)
+        assertEquals(false, PersistedUserSettings(onboardingDismissed = true).onboardingDismissed.not())
+    }
 }

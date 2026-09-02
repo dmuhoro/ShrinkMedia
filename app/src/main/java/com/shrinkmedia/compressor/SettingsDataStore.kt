@@ -24,6 +24,7 @@ data class PersistedUserSettings(
     val videoQuality: CompressionQuality = CompressionQuality.MEDIUM,
     val ocrLanguage: String = OcrLanguage.ENGLISH.key,
     val enableBatch: Boolean = false,
+    val onboardingDismissed: Boolean = false,
     val totalHistoricalSavedBytes: Long = 0L,
     val totalHistoricalFilesCount: Long = 0L
 )
@@ -38,6 +39,7 @@ class SettingsRepository(private val context: Context) {
         val VIDEO_QUALITY = stringPreferencesKey("video_quality")
         val OCR_LANGUAGE = stringPreferencesKey("ocr_language")
         val ENABLE_BATCH = booleanPreferencesKey("enable_batch")
+        val ONBOARDING_DISMISSED = booleanPreferencesKey("onboarding_dismissed")
         val TOTAL_SAVED_BYTES = longPreferencesKey("total_saved_bytes")
         val TOTAL_FILES_COUNT = longPreferencesKey("total_files_count")
     }
@@ -67,6 +69,7 @@ class SettingsRepository(private val context: Context) {
             val ocrLanguage = try { OcrLanguage.fromKey(ocrLang).key } catch (e: Exception) { OcrLanguage.ENGLISH.key }
 
             val enableBatch = preferences[PreferencesKeys.ENABLE_BATCH] ?: false
+            val onboardingDismissed = preferences[PreferencesKeys.ONBOARDING_DISMISSED] ?: false
 
             val savedBytes = preferences[PreferencesKeys.TOTAL_SAVED_BYTES] ?: 0L
             val filesCount = preferences[PreferencesKeys.TOTAL_FILES_COUNT] ?: 0L
@@ -79,6 +82,7 @@ class SettingsRepository(private val context: Context) {
                 videoQuality = vidQuality,
                 ocrLanguage = ocrLanguage,
                 enableBatch = enableBatch,
+                onboardingDismissed = onboardingDismissed,
                 totalHistoricalSavedBytes = savedBytes,
                 totalHistoricalFilesCount = filesCount
             )
@@ -111,6 +115,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateEnableBatch(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.ENABLE_BATCH] = enabled
+        }
+    }
+
+    suspend fun updateOnboardingDismissed(dismissed: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ONBOARDING_DISMISSED] = dismissed
         }
     }
 
