@@ -4,6 +4,27 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.5.0 — App Rename + Media Delete + First-Run Onboarding (2026-09-02, Sprint 13)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Launcher label + notification title renamed to **ShrinkMedia** | PASS | `strings.xml` `app_name`; `BatchCompressionService.kt`; web-sim parity (`index.html`, `src/App.tsx`); `aapt2 dump badging` → `application-label:'ShrinkMedia'` |
+| "Your media library" multi-select delete (Select button + confirm dialog) | PASS | `MediaTab` header `Select`/`Done`, selection checkboxes + error-color border, count/Cancel/Delete action bar, confirm `AlertDialog` (`MainActivity.kt`); uiautomator dump shows `text="Select"` |
+| API 30+ delete via `MediaStore.createDeleteRequest` system consent | PASS (code) | `buildDeleteRequest` returns `PendingIntent` (javap-verified on android-35); `StartIntentSenderForResult` launcher; `applyMediaDeletion` surfaces non-OK (no silent drop); **final human tap = manual step** (device denies `INJECT_EVENTS`) |
+| API <30 fallback `deleteLegacy` (typed, no silent drop) | PASS | `deleteLegacy` counts per-row results and toasts full/partial/failure |
+| Onboarding card "Get to know ShrinkMedia" + **Got it** | PASS | uiautomator dump shows card, 3 bullets, `Got it`; `dismissOnboarding()` |
+| `ONBOARDING_DISMISSED` additive key, default `false` (fail-closed) | PASS | `SettingsDataStore.kt`; unit test `onboardingDismissedDefaultsToFalseFailClosed`; sandbox DataStore commit `08 01` observed; clean-datastore relaunch re-shows card |
+| App version v0.5.0 / versionCode 5 | PASS | `app/build.gradle.kts`; `aapt2 dump badging` → `versionCode='5' versionName='0.5.0'` |
+| Web-sim gates (`npm run lint` / `npm test` / `npm run build`) | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `compileDebugKotlin` | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `testDebugUnitTest` | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `assembleDebug` | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `compileDebugAndroidTestKotlin` | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `assembleRelease` (R8 minify) | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| `lintDebug` | PASS | `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md` |
+| Device install + launch (API 36) — no crashes; label/onboarding/Select visible | PASS | `adb install -r --user 0` Success; `am start` → topResumedActivity MainActivity; logcat clean; uiautomator on-screen text proof |
+| GitHub Release `v0.5.0` with attached signed APK | PASS | Release published from tag `v0.5.0`; `app-release.apk` (58,200,664 B) attached; `apksigner verify` cert SHA-256 `21569322706156fe...` (production keystore) |
+
 ## Gate: v0.4.0 — Media Gallery + Quality UX + PDF Preview + Text Fidelity (2026-09-01, Sprint 12)
 
 | Item | Status | Evidence |

@@ -74,6 +74,22 @@ output."
 
 ---
 
+## D007 — Media deletion stays user-consented and fail-closed (ACCEPTED)
+
+- **Date:** 2026-09-02 • **Decider:** Daniel Muhoro
+
+Deleting originals from "Your media library" is destructive, so the app never deletes
+without a visible consent path. API 30+ uses `MediaStore.createDeleteRequest`, which
+returns a `PendingIntent` for the **system** consent dialog (launched via
+`ActivityResultContracts.StartIntentSenderForResult`); any non-`RESULT_OK` outcome is
+surfaced ("Delete cancelled — no files were changed") and nothing is dropped silently.
+API <30 falls back to `deleteLegacy`, a typed direct `contentResolver.delete` with
+explicit full / partial / failure toasts. The confirm `AlertDialog` precedes every
+delete request. `buildDeleteRequest` returns `null` below API 30 and on an empty
+selection (fail-closed: no request is ever built without a guarded path).
+
+---
+
 ## Superseded
 
 - None yet. When an ADR supersedes a D-entry, the entry is marked `SUPERSEDED`

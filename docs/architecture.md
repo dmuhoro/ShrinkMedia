@@ -58,13 +58,22 @@ the UI.
    `Dispatchers.IO` at ViewModel init; thumbnails load via Coil
    `rememberAsyncImagePainter` from local content-provider URIs (no storage
    permission, no INTERNET).
+7. **Media delete is user-consented and fail-closed**: `Select` toggles a
+   selection mode in the media library; Delete requires a confirm dialog; API 30+
+   delegates to `MediaStore.createDeleteRequest` (returns a `PendingIntent` shown
+   as the **system** consent dialog via `StartIntentSenderForResult`), API <30 falls
+   back to typed direct `contentResolver.delete`. Non-OK results are surfaced, never
+   silently dropped.
+8. **First-run onboarding** is a `UiState` flag defaulting to `false` (fail-closed:
+   card shows until dismissed); "Got it" persists it through the additive
+   `ONBOARDING_DISMISSED` DataStore key.
 
 ## Key Modules & Files
 
 | Module | File | Responsibility |
 |--------|------|----------------|
-| UI shell | `app/.../MainActivity.kt` | Tabs, state, pickers, engine helpers; MediaTab media gallery (`getUserMediaFiles`/`MediaFileCard`, vertical quality radio UX); DocumentsTab PDF preview (`PdfPreviewState`); `LocationTextExtractionStrategy` extraction |
-| Settings | `app/.../SettingsDataStore.kt` | `PersistedUserSettings`, repository |
+| UI shell | `app/.../MainActivity.kt` | Tabs, state, pickers, engine helpers; MediaTab media gallery (`getUserMediaFiles`/`MediaFileCard`, vertical quality radio UX, multi-select **Select/Delete** via `MediaStore.createDeleteRequest` consent + first-run onboarding card); DocumentsTab PDF preview (`PdfPreviewState`); `LocationTextExtractionStrategy` extraction |
+| Settings | `app/.../SettingsDataStore.kt` | `PersistedUserSettings`, repository (additive `ONBOARDING_DISMISSED` key; fail-closed defaults) |
 | Batch queue | `app/.../BatchCompressionService.kt` | Foreground loop + pause controller + battery receiver |
 | Simulator | `src/App.tsx` | Web preview + code tabs |
 | Simulator lib | `src/lib/*` | Pure helpers (testable) |

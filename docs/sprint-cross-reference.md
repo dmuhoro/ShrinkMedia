@@ -32,6 +32,8 @@
 | 10 — v0.3.0 signed release | Production keystore + signed APK + GitHub Release | `keystore.properties` + `app-release.apk` (`apksigner verify` PASS); Release `v0.3.0` attached | ✅ Verified |
 | 11 — PDF compile fixes + UI polish | iText 7 PDF engine + recent/settings/theme + R8 proguard fix | `MainActivity.kt` (iText), `SettingsDataStore.kt`, `OcrHelper.kt`, `proguard-rules.pro`; all 6 Android gates green (`docs/evidence/2026-09-01_pdf_compile_fixes_ui_polish.md`) | ✅ Verified |
 | 12 — Media gallery + quality UX + PDF preview + text fidelity | v0.4.0: MediaStore media library (`MediaFile`/`MediaFileCard`, Coil), vertical `HIGH→MEDIUM→LOW` quality radios, PDF-build preview (Open/Save/Discard), `LocationTextExtractionStrategy` extraction | `MainActivity.kt` + `app/build.gradle.kts` (v0.4.0); all 6 Android gates + device launch green (`docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`) | ✅ Verified on hardware |
+| 13 — App rename + media delete + first-run onboarding | v0.5.0: launcher label **ShrinkMedia**; **Select** multi-select delete (`MediaStore.createDeleteRequest` consent on API 30+, `deleteLegacy` below, confirm dialog, no silent drops); onboarding card + additive `ONBOARDING_DISMISSED` (default `false`); liveliness radar I002 | `strings.xml` + `BatchCompressionService.kt` + `MainActivity.kt` + `SettingsDataStore.kt` + web-sim rename; all 6 Android gates + device launch + uiautomator text proof (`docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md`). ⚠️ Device denies `INJECT_EVENTS`, so the delete consent **tap** is a recorded manual step, not an adb proof | ✅ Render/persist/compile verified; consent tap ≡ manual |
+| 14 — *(next)* | | | |
 
 ## Rules That Keep This Honest
 

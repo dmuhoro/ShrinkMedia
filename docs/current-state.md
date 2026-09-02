@@ -1,6 +1,6 @@
 # ShrinkMedia — Current State
 
-> Orientation doc: **what is real vs ASPIRATIONAL**, as of 2026-09-01.
+> Orientation doc: **what is real vs ASPIRATIONAL**, as of 2026-09-02.
 > Read before any task (AGENTS.md §7). If a task assumes a capability marked
 > **ASPIRATIONAL**, stop and say so before building on it.
 
@@ -29,9 +29,7 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C16 | Batch no-silent-drops: per-file failure surfacing + on-device audit log | ⚠️ | `BatchFailureAudit` + completion notification reason summary (Constitution I.6); instrumented `failure_audit_record...` written; **device run Sprint 8** |
 | C17 | Google Tools Bridge (Drive/Docs/cloud-Gemini) | **ASPIRATIONAL (v2)** | ADR-010: deliberately staged OUT of v1, opt-in connected mode, fail-closed on-device default; Photos needs no bridge (system picker); AICore device-gated |
 | C18 | Media gallery + quality UX overhaul (Sprint 12) | ✅ | `MediaStore` `Images`/`Video` query → "Your media library" `MediaFileCard` thumbnails (Coil, no INTERNET); vertical quality `RadioButton` `HIGH→MEDIUM→LOW`; PDF-build preview card (Open / Save to Gallery / Discard); `LocationTextExtractionStrategy` text extraction; v0.4.0; all 6 Android gates + device launch green (`docs/evidence/2026-09-01_media_gallery_quality_ux_pdf_preview.md`) |
-| C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.3.0) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`); `apksigner verify` PASS on `app-release.apk` **signed with the production keystore** (`~/.android/keystores/shrinkmedia-release.jks`, gitignored `keystore.properties`); distributed via GitHub sideload |
-| C14 | Android instrumentation tests **written** (JVM + instrumented) | ⚠️ | JVM unit tests run green; instrumented APK compiles; **execution on device = Sprint 8** |
-| C15 | CI hardened to Node-24 actions + signed release-AAB job | ✅ | `.github/workflows/ci.yml` (checkout/setup-node/setup-java/cache v5, upload-artifact v7, fail-closed release job) |
+| C19 | App rename + media delete + first-run onboarding (Sprint 13) | ✅ | Launcher label **ShrinkMedia** (`strings.xml`, service notification, web-sim parity); **Select** multi-select delete in "Your media library" — API 30+ `MediaStore.createDeleteRequest` system consent (`PendingIntent` → `StartIntentSenderForResult`), API <30 `deleteLegacy`, confirm dialog, no silent drops; additive `ONBOARDING_DISMISSED` key (default `false`) + onboarding card ("Get to know ShrinkMedia"); v0.5.0; all 6 Android gates + device launch + uiautomator text proof green (`docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md`) |
 
 ## What This Means For New Work
 

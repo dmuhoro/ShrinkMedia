@@ -5,6 +5,55 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.5.0] — 2026-09-02
+
+Identity + space-reclaim + first-run guidance: the app's launcher label is now
+**ShrinkMedia**, the media library supports batch deletion with system consent,
+and a first-run onboarding card points to the three habits that matter. All 6
+Android gates and the on-device launch gate are green.
+
+### Added
+- **First-run onboarding card** ("Get to know ShrinkMedia", `MainActivity.kt` +
+  `SettingsDataStore.kt`):
+  - Three bit-sized pointers: on-device privacy (no INTERNET permission), where to
+    find compressed copies + autosave, and freeing space via Select/delete.
+  - "Got it" dismisses; persisted via the additive DataStore key
+    `ONBOARDING_DISMISSED` (default `false` → fail-closed: the card shows until the
+    user dismisses it). Unit test `onboardingDismissedDefaultsToFalseFailClosed`.
+- **Media library multi-select delete** (`MainActivity.kt`): a **Select** button on
+  the right of the "Your media library" header switches cards to selection mode
+  (checkbox + error-color border), with a confirm `AlertDialog` before any delete.
+- **API 30+ delete via system consent**: `MediaStore.createDeleteRequest` returns a
+  `PendingIntent` (verified via `javap` on `android-35/android.jar`), launched with
+  `ActivityResultContracts.StartIntentSenderForResult`; `RESULT_OK` removes the
+  deleted files from the library, anything else toasts "Delete cancelled — no files
+  were changed" (no silent drop).
+- **API <30 fallback** `deleteLegacy`: direct `contentResolver.delete` with explicit
+  full / partial / failure toasts.
+- **Liveliness ideas radar** (`docs/ideas.md` I002) — staged, costed ideas for making
+  the app more lively; only the onboarding pointer is implemented this sprint.
+
+### Changed
+- **App renamed** to **ShrinkMedia** (`app/src/main/res/values/strings.xml`
+  `app_name`, `BatchCompressionService.kt` notification title, web-sim parity in
+  `index.html` and `src/App.tsx`). Historical docs keep the old label for the release
+  they describe.
+- Version bumped to `0.5.0` (`versionCode 5`).
+
+### Note
+- All builds pass: `compileDebugKotlin`, `testDebugUnitTest`, `assembleDebug`,
+  `compileDebugAndroidTestKotlin`, `assembleRelease` (R8), `lintDebug`; web-sim
+  `npm run lint` / `npm test` (18) / `npm run build` green.
+- App installs + launches on the API-36 device with no crashes; uiautomator on-device
+  text proof shows the **ShrinkMedia** label, the onboarding card (+ "Got it"), and the
+  **Select** button; the `onboarding_dismissed` bool commit (`08 01`) was observed in
+  the sandbox DataStore.
+- Manifest still declares **no INTERNET permission** (privacy invariant held).
+- Honest gap: this device denies `adb shell input tap` (no `INJECT_EVENTS`) and `pm
+  clear`, so the final human tap through the delete consent dialog is recorded as a
+  manual verification step; everything short of that tap is verified.
+- Evidence: `docs/evidence/2026-09-02_app_rename_media_delete_onboarding.md`.
+
 ## [0.4.0] — 2026-09-01
 
 Real-world usability overhaul: the Media tab now shows the user's actual media
