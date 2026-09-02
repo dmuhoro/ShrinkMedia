@@ -1,0 +1,73 @@
+# Auto-deploy the web simulator to Vercel on push to main.
+# Fail-closed: without the VERCEL_TOKEN/ORG_ID/PROJECT_ID secrets set in the
+# repo, this completes after the quality gates with NO deploy (no broken or
+# altered site is ever pushed). The native APK path is unaffected — the web
+# surface is the ADR-006 simulator harness and carries no INTERNET dependency.
+name: Deploy Web to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'vercel.json'
+      - 'public/**'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build, test, then deploy to production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check / lint gate
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Fail closed if Vercel secrets are absent
+        id: secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || \
+             [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Vercel secrets not configured — skipping production deploy (site stays as-is). Set VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID to enable auto-deploy."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Vercel (production)
+        if: steps.secrets.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
