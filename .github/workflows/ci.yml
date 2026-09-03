@@ -109,7 +109,12 @@ jobs:
             echo "::notice::Signing secrets not configured — signed release AAB skipped. Provision STORE_FILE/STORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD to enable it."
             exit 0
           fi
-          echo "$STORE_FILE" | base64 --decode > keystore.jks
+          # NOTE: app/build.gradle.kts resolves keystore.properties via
+          # rootProject.file(...) (repo root) but interprets `storeFile` through
+          # the PROJECT-relative `file(...)` inside the signingConfig, i.e. under
+          # app/. So the decoded keystore must live at app/keystore.jks, not the
+          # repo root, or validateSigningRelease fails ("keystore.jks not found").
+          echo "$STORE_FILE" | base64 --decode > app/keystore.jks
           printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
             "keystore.jks" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" \
             > keystore.properties
