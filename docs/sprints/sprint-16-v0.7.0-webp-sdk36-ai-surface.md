@@ -30,12 +30,14 @@ and the **keystore off-machine backup runbook**.
 
 ## Honest status (what is NOT yet proven)
 
-- **On-device AI inference is NOT hardware-proven (L5).** The repository compiles,
-  its gates fail-closed against the real ML Kit GenAI library, and the release build
-  is clean with **no INTERNET** permission. But a real Gemini Nano/AICore inference
-  requires a Nano-capable device; until one runs the real path, the AI surface is
-  build-verified only — it is **not** claimed PASS on hardware (AGENTS §11,
-  Constitution Art. VII).
+- **On-device AI inference is NOT Nano-proven (L5).** The real ML Kit GenAI path was
+  **run on the connected Redmi API-36 test handset**: `checkStatus()` returned
+  **`UNAVAILABLE`** — the device has no AICore/Gemini Nano runtime (non-Nano SoC). The
+  gate failed closed correctly (no crash, no false AVAILABLE, no INTERNET), which is
+  the honest non-Nano wall L5 expected. A real Gemini Nano inference still requires a
+  **Nano-capable device** (Pixel-8-class / S24-class); until one runs the real path,
+  the AI surface is build-verified + on-device-probed but **not** claimed PASS on
+  hardware (AGENTS §11, Constitution Art. VII).
 - **C5 batch device run** is still physically blocked by device storage.
 - **Keystore off-machine copy** is a human step not yet performed (runbook ready).
 
@@ -52,10 +54,13 @@ and the **keystore off-machine backup runbook**.
 - `docs/evidence/2026-09-03_webp_in_image_ui.md` (L3)
 - `docs/evidence/2026-09-03_kotlin_2_2_bump.md` (L4a)
 - `docs/evidence/2026-09-03_adr011_on_device_ai_surface.md` (L4b)
+- `docs/evidence/2026-09-03_on_device_ai_verification_l4c_l5.md` (L5: real on-device `checkStatus()` → UNAVAILABLE)
 - `docs/evidence/2026-09-03_keystore_off_machine_backup.md` (L6)
 
 ## Outstanding (explicit, not hidden)
 
-- L4c: on-device functional verification of the AI panel (device not connected).
-- L5: Gemini Nano/AICore on-hardware proof (needs a Nano-capable device).
+- L4c: reach the AI **tab panel** interactively for a screenshot (blocked on this
+  Xiaomi build: `adb shell input tap` denied INJECT_EVENTS); the panel logic itself
+  is verified via compile + lint + the real on-device repository probe above.
+- L5: Gemini Nano/AICore on-hardware **inference output** (needs a Nano-capable device).
 - C5 batch device run (storage-bound).
