@@ -154,16 +154,15 @@
    added, SDK 35 + build-tools 35.0.0 installed, `assembleDebug` green
    (`docs/evidence/2026-08-30_android_config_check.md`).
 2. **Device runtime verification (Sprint 8 gate) — CLEARED 2026-08-31:** the
-   real-path instrumented suite now runs green (8/8) on API-36 hardware
+   real-path instrumented suite now runs green (9/9) on API-36 hardware
    (`docs/evidence/2026-08-31_device_verification.md`). Battery-pause (never
    drops), autosave, fail-closed-null, savings, and the audit record are all
    verified on device. The MIUI "Install via USB" toggle was the only install
    impediment; it is now enabled.
-3. **Production keystore (human-owned):** release signing is configured and
-   locally proven with a throwaway dev keystore, but a real keystore must be
-   provisioned (gitignored `keystore.properties` + CI `STORE_*`/`KEY_*` secrets)
-   to build a distributable signed AAB. Fail-closed by design — no unsigned
-   artifact is produced without it.
+3. ~~**Production keystore (human-owned)**~~ — resolved 2026-08-31: real
+   production keystore provisioned at `~/.android/keystores/shrinkmedia-release.jks`
+   (gitignored `keystore.properties`); C13 `apksigner verify` PASS, cert
+   SHA-256 `2156...580a`, signed APK distributed via GitHub sideload.
 
 ## Definition of Release
 
