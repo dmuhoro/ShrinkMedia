@@ -4,6 +4,22 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.6.0 — Branding + Working Video Compression + CI-Proof (2026-09-03, Sprint 15)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| AI launcher icon wired (legacy mipmap + adaptive over `#2E7D6B`) | PASS | `Assets/icon.png` → `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png` + adaptive `ic_launcher.xml`; `aapt2 dump badging` → `icon='res/mipmap-anydpi-v26/ic_launcher.xml'`; APK installs + launches no-crash on API-36 |
+| OG social cover on live site | PASS | `public/og-cover.png` (1200×630) + `og:image`/`twitter:image` in `index.html`; dist build contains the meta; `shrinkmedia.vercel.app` HTTP 200 |
+| Secrets-enabled auto-deploy PROVEN | PASS | Manual `gh workflow run` (33737963547): `Deploy to Vercel (production)` **ran + succeeded** (new production deploy `-potzv5tn5` live, HTTP 200). Previously fail-closed-skipped due to absent secrets |
+| Video compression actually encodes on-device | PASS | `connectedDebugAndroidTest` **10/10 on API-36** incl. `compressVideoFile...ProducesASmallerValidH264Mp4` (real openh264 re-encode smaller + decodable) |
+| Dependency fix (LGPL `ffmpeg-kit-full` + smart-exception, openh264) | PASS | `docs/evidence/2026-09-03_video_compression_dependency_fix.md` |
+| Unit tests | PASS | `testDebugUnitTest` green (v0.6.0 build) |
+| `lintDebug` | PASS | green on v0.6.0 build |
+| `assembleDebug` / `assembleRelease` (R8) | PASS | green on v0.6.0 build |
+| State docs → reality (C3/C4/C6/C7/C14/C16 ✅) | PASS | `docs/current-state.md` with on-device citations |
+| CHANGELOG + sprint record updated | PASS | `CHANGELOG.md` v0.6.0; `docs/sprints/sprint-15-branding-video-fix-release.md` |
+| Signed release APK + GitHub Release `v0.6.0` | PASS | tag `v0.6.0` (SSH-signed); `app-release.apk` signed with production keystore, attached to Release |
+
 ## Gate: v0.5.0 — App Rename + Media Delete + First-Run Onboarding (2026-09-02, Sprint 13)
 
 | Item | Status | Evidence |
@@ -166,10 +182,10 @@
 
 ## Definition of Release
 
-- [ ] All PASS rows above hold with citations.
-- [ ] No FAIL rows without a documented descope decision (`docs/decisions.md`).
-- [ ] `CHANGELOG.md` and active sprint plan(s) reflect the release.
-- [ ] Sprint 8 device-verification gate rows flip from `⚠️`/`BLOCKED` to PASS.
-- [ ] OCR + no-silent-drops gate (above): code rows hold with citations; the two
+- [x] All PASS rows above hold with citations.
+- [x] No FAIL rows without a documented descope decision (`docs/decisions.md`).
+- [x] `CHANGELOG.md` and active sprint plan(s) reflect the release.
+- [x] Sprint 8 device-verification gate rows flip from `⚠️`/`BLOCKED` to PASS.
+- [x] OCR + no-silent-drops gate (above): code rows hold with citations; the two
       "device run pending" instrumented rows flip to PASS once the MIUI install
       gate is lifted and the suite runs on hardware.

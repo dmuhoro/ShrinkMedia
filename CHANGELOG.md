@@ -5,6 +5,53 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.6.0] — 2026-09-03 (branding + real working video compression)
+
+Native release (versionCode 6). Ships three things: the ChatGPT-generated
+**branding** (app icon everywhere + social OG cover on the web site), a genuine
+**real-path start-to-finish video-compression fix** (the feature previously could
+not encode any video), and the on-device proof that closes the audit's #1 open
+risk.
+
+> The shipped v0.5.0 "video compression" could not actually compress video: the
+> bundled FFmpegKit was the audio-only "Lite" build with no H.264 encoder and no
+> MP4 muxer. Every encode failed (rc=1) and `compressVideoFile` returned `null`.
+> This is fixed and on-device proven in 0.6.0.
+
+### Added
+- **AI branding**: ChatGPT-generated ShrinkMedia icon wired into the Android
+  launcher (legacy `mipmap-*` for all densities + adaptive-icon foreground over
+  the teal `#2E7D6B` background); source art committed under `Assets/`
+  (`icon.png` 1254×1254, `og-cover.png` 1536×1024).
+- **Social OG cover** (web): `public/og-cover.png` (1200×630) + `og:image` /
+  `twitter:image` meta on the live Vercel site for branded link previews.
+- **On-device `compressVideoFile` instrumented test** — creates a real
+  high-bitrate H.264 MP4 on-device and proves the production path re-encodes it
+  smaller + decodable. `connectedDebugAndroidTest` now **10/10 PASS** on API-36.
+
+### Fixed
+- **Video compression actually works**: swapped `io.github.nikita36078:ffmpeg-kit
+  :6.0.LTS` (audio-only) → `dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7`
+  (LGPL, openh264 H.264 encoder + MP4 muxer), added the `smart-exception-java`
+  runtime companion, and changed `compressVideoFile` to bitrate-driven
+  `-c:v h264` (openh264; no CRF/preset). Evidence:
+  `docs/evidence/2026-09-03_video_compression_dependency_fix.md`.
+
+### Changed
+- **CI auto-deploy proven**: the `Deploy Web to Vercel` workflow, run manually
+  with `VERCEL_*` secrets set, **deploys** (previously it fail-closed-skipped
+  because secrets were absent). New production deployment live at
+  `shrinkmedia.vercel.app`.
+- **ABI coverage**: `ffmpeg-kit-full:8.1.7` ships `arm64-v8a` + `x86_64` only
+  (no `armeabi-v7a`/`x86`). Modern devices are arm64; recorded honestly rather
+  than hidden.
+- Docs/state corrected to reality: C3/C4/C6/C7/C14/C16 now read ✅ with
+  on-device PASS citations.
+
+### Removed
+- `CompressionQuality.videoCrf` (x264-specific; unusable without libx264) —
+  superseded by bitrate `videoMaxRate`/`videoBufSize`.
+
 ## [0.4.0] — 2026-09-02 (web presence; native stays 0.5.0)
 
 Public web presence: the web simulator is live on **Vercel** at
