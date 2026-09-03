@@ -112,6 +112,11 @@ dependencies {
     // CCTDestination and R8 fails to minify without it).
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
+    // ML Kit GenAI Prompt (Gemini Nano via AICore) — ADR-011. On-device, device-gated.
+    // NO INTERNET surfaces past the merged-manifest tools:node="remove" guard (CI enforces it).
+    // Transitive genai-common is included. Compiled against Kotlin 2.2 (see L4a bump).
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta2")
+
     // FFmpegKit FULL (video compression engine; LGPL, maintained Central-published
     // fork exposing the com.arthenica.ffmpegkit API used by MainActivity).
     // JUSTIFICATION (AGENTS §6): the previous audio-only "LTS/Lite" build

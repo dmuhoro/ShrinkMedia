@@ -887,7 +887,75 @@ private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit
     if (state.extractedText.isNotBlank()) item { Card { Column(Modifier.padding(16.dp)) { Text("Extracted PDF text", fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp)); Text(state.extractedText.take(12000), fontSize = 13.sp) } } }
     item { Card { Column(Modifier.padding(16.dp)) { Text("Scan reader (OCR)", fontWeight = FontWeight.Bold); Text("Reads printed ${state.ocrLanguage.label} text from a photo or scan — fully on-device via ML Kit, no model download and no upload. (Handwriting recognition is not yet supported.)", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Button({ pickOcrImage() }, enabled = !state.busy) { Text(if (state.busy) "Working…" else "Choose scan image") } } } }
     if (state.ocrUri != null) item { Card { Column(Modifier.padding(16.dp)) { Text(state.ocrStatus, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp); if (!state.ocrText.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Text(state.ocrText.take(12000), fontSize = 13.sp) } } } }
-    item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text("AICore handoff: extracted text is held locally and can be sent to a device model after adding the platform AICore dependency and availability check (staged for v2).", Modifier.padding(16.dp), fontSize = 13.sp) } }
+    item { PersonalIntelligenceCard() }
+}
+
+@Composable private fun PersonalIntelligenceCard() {
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<OnDeviceInferenceRepository.Status?>(null) }
+    var probing by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<OnDeviceInferenceRepository.AiResult?>(null) }
+    var summarized by remember { mutableStateOf(false) }
+    val prompt = remember { mutableStateOf("") }
+
+    fun probe() {
+        probing = true
+        scope.launch {
+            status = OnDeviceInferenceRepository.checkStatus()
+            probing = false
+        }
+    }
+
+    LaunchedEffect(Unit) { probe() }
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("Personal intelligence (Gemini Nano)", fontWeight = FontWeight.Bold)
+            }
+            Text("Summaries and answers run entirely on this device via Android AICore. No text is sent to the internet and the app declares no INTERNET permission.", fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            val s = status
+            when {
+                probing -> Text("Checking on-device model availability…", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                s == null -> Text("Status unknown", fontSize = 13.sp)
+                s == OnDeviceInferenceRepository.Status.AVAILABLE -> Text("Available — Gemini Nano is ready.", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                s == OnDeviceInferenceRepository.Status.DOWNLOADABLE -> Text("Model not downloaded yet. AICore will fetch it; re-check, then retry.", fontSize = 13.sp)
+                s == OnDeviceInferenceRepository.Status.DOWNLOADING -> Text("Gemini Nano is downloading…", fontSize = 13.sp)
+                s == OnDeviceInferenceRepository.Status.API_TOO_OLD -> Text("This Android version can't run on-device AI (needs API 26+).", fontSize = 13.sp)
+                else -> Text("Gemini Nano is unavailable on this device.", fontSize = 13.sp)
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(prompt.value, { prompt.value = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Ask a question…") }, maxLines = 3)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { probe() }, enabled = !probing) { Text("Re-check") }
+                Button(
+                    onClick = {
+                        result = null; summarized = false
+                        scope.launch {
+                            val r = OnDeviceInferenceRepository.summarize(prompt.value.trim().ifBlank { "Summarize this app for me." })
+                            result = r
+                            if (r !is OnDeviceInferenceRepository.AiResult.Unavailable) summarized = true
+                        }
+                    },
+                    enabled = status == OnDeviceInferenceRepository.Status.AVAILABLE && !probing
+                ) { Text("Summarize on device") }
+            }
+            if (result is OnDeviceInferenceRepository.AiResult) {
+                val r = result as OnDeviceInferenceRepository.AiResult
+                Spacer(Modifier.height(8.dp))
+                when (r) {
+                    is OnDeviceInferenceRepository.AiResult.Text -> Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) { Text(r.content, Modifier.padding(12.dp), fontSize = 13.sp) }
+                    is OnDeviceInferenceRepository.AiResult.Error -> Text(r.reason, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                    is OnDeviceInferenceRepository.AiResult.Unavailable -> if (summarized) Text("No output — on-device model unavailable.", fontSize = 13.sp) else Text("Summarize only runs when a device model is available.", fontSize = 13.sp)
+                }
+            }
+            Text("Privacy: hosts the on-device model, never uploads. If the model is missing or the OS is too old, this card refuses instead of falling to the cloud.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 @Composable private fun RecentSection(state: UiState, vm: ToolkitViewModel) {

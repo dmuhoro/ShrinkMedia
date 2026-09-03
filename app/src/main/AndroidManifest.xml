@@ -17,6 +17,13 @@
         tools:node="remove" />
 
     <!-- Scoped storage & File sharing provider support -->
+    <!-- ML Kit GenAI Prompt (Gemini Nano) + genai-common declare minSdk 26, but the app targets
+         minSdk 24. We force the libraries (overrideLibrary) so they build in;
+         OnDeviceInferenceRepository guards EVERY GenAI class touch behind
+         Build.VERSION.SDK_INT >= 26 (returns API_TOO_OLD below), so the library classes are
+         never loaded on 24-25 and no runtime failure can occur. -->
+    <uses-sdk tools:overrideLibrary="com.google.mlkit.genai.prompt,com.google.mlkit.genai.common" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
