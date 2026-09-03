@@ -64,13 +64,15 @@ class BatchCompressionService : Service() {
         const val EXTRA_IS_VIDEO = "extra_is_video"
         const val EXTRA_QUALITY = "extra_quality"
         const val EXTRA_AUTO_SAVE = "extra_auto_save"
+        const val EXTRA_IMAGE_FORMAT = "extra_image_format"
 
         fun startBatch(
             context: Context,
             uris: List<Uri>,
             isVideo: Boolean,
             qualityName: String,
-            autoSave: Boolean
+            autoSave: Boolean,
+            imageFormatName: String = "JPEG"
         ) {
             val intent = Intent(context, BatchCompressionService::class.java).apply {
                 action = ACTION_START_BATCH
@@ -78,6 +80,7 @@ class BatchCompressionService : Service() {
                 putExtra(EXTRA_IS_VIDEO, isVideo)
                 putExtra(EXTRA_QUALITY, qualityName)
                 putExtra(EXTRA_AUTO_SAVE, autoSave)
+                putExtra(EXTRA_IMAGE_FORMAT, imageFormatName)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -116,6 +119,7 @@ class BatchCompressionService : Service() {
                 val isVideo = intent.getBooleanExtra(EXTRA_IS_VIDEO, false)
                 val qualityName = intent.getStringExtra(EXTRA_QUALITY) ?: "MEDIUM"
                 val autoSave = intent.getBooleanExtra(EXTRA_AUTO_SAVE, false)
+                val imageFormatName = intent.getStringExtra(EXTRA_IMAGE_FORMAT) ?: "JPEG"
 
                 startForeground(NOTIFICATION_ID, buildProgressNotification(0, uris.size, "Starting batch compression..."))
                 serviceScope.launch {
@@ -123,7 +127,7 @@ class BatchCompressionService : Service() {
                         .userSettingsFlow.first().pauseCompressionOnLowBattery
                     if (pauseOnLowBattery) registerBatteryReceiver()
                     BatchCompressionPauseController.isPaused.value = pauseOnLowBattery && isBatteryLowAndNotCharging()
-                    executeBatchProcessing(uris, isVideo, qualityName, autoSave)
+executeBatchProcessing(uris, isVideo, qualityName, autoSave, imageFormatName)
                 }
             }
             ACTION_CANCEL_BATCH -> {
@@ -144,14 +148,16 @@ class BatchCompressionService : Service() {
         uris: List<Uri>,
         isVideo: Boolean,
         qualityName: String,
-        autoSave: Boolean
-    ) = executeBatchProcessing(uris, isVideo, qualityName, autoSave)
+        autoSave: Boolean,
+        imageFormatName: String = "JPEG"
+    ) = executeBatchProcessing(uris, isVideo, qualityName, autoSave, imageFormatName)
 
     suspend fun executeBatchProcessing(
         uris: List<Uri>,
         isVideo: Boolean,
         qualityName: String,
-        autoSave: Boolean
+        autoSave: Boolean,
+        imageFormatName: String = "JPEG"
     ) {
         val total = uris.size
         var successCount = 0
@@ -183,7 +189,11 @@ class BatchCompressionService : Service() {
                 if (isVideo) {
                     compressVideoFile(applicationContext, uri, quality)
                 } else {
-                    compressImageFile(applicationContext, uri, quality)
+                    when (imageFormatName) {
+                        "WEBP_LOSSY" -> compressImageFileAsWebP(applicationContext, uri, quality, WebpMode.LOSSY)
+                        "WEBP_LOSSLESS" -> compressImageFileAsWebP(applicationContext, uri, quality, WebpMode.LOSSLESS)
+                        else -> compressImageFile(applicationContext, uri, quality)
+                    }
                 }
             } catch (e: Exception) {
                 null.also { recordFailure(failureReasons, auditLog, uri, "compression threw: ${e.message ?: "unknown error"}") }

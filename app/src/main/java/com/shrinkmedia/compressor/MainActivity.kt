@@ -138,6 +138,7 @@ data class UiState(
     val tab: ToolkitTab = ToolkitTab.MEDIA, val busy: Boolean = false,
     val status: String = "Ready — all processing stays on-device.",
     val quality: CompressionQuality = CompressionQuality.MEDIUM,
+    val imageFormat: ImageFormat = ImageFormat.JPEG,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val ocrLanguage: OcrLanguage = OcrLanguage.ENGLISH,
     val enableBatch: Boolean = false,
@@ -205,6 +206,10 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { settings.updateImageQuality(quality); settings.updateVideoQuality(quality) }
         _toast.tryEmit("Compression quality set to ${quality.label}")
     }
+    fun imageFormat(format: ImageFormat) {
+        _state.update { it.copy(imageFormat = format) }
+        _toast.tryEmit("Image output format set to ${format.label}")
+    }
     fun theme(mode: AppThemeMode) {
         _state.update { it.copy(themeMode = mode) }
         viewModelScope.launch { settings.updateThemeMode(mode) }
@@ -238,8 +243,10 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         val quality = _state.value.quality
         val inputBytes = getFileSizeFromUri(context, uri)
         val startedAt = System.currentTimeMillis()
-        val output = requireNotNull(if (video) compressVideoFile(context, uri, quality) else compressImageFile(context, uri, quality)) { "Compression failed: unsupported type or unreadable file." }
-        val audit = buildAuditDetail(quality, video, System.currentTimeMillis() - startedAt)
+        val output = requireNotNull(
+            compressMedia(context, uri, video, _state.value.quality, _state.value.imageFormat)
+        ) { "Compression failed: unsupported type or unreadable file." }
+        val audit = buildAuditDetail(quality, video, _state.value.imageFormat, System.currentTimeMillis() - startedAt)
         onCompressionSucceeded(context, MediaResult(getFileNameFromUri(context, uri) ?: output.name, inputBytes, output, video), audit)
         "Finished ${output.name}"
     }
@@ -250,21 +257,21 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
     private fun startBatch(uris: List<Uri>, video: Boolean) {
         if (uris.isEmpty() || _state.value.busy) return
         val context = getApplication<Application>().applicationContext
-        BatchCompressionService.startBatch(context, uris, video, _state.value.quality.name, _state.value.autoSave)
+        BatchCompressionService.startBatch(context, uris, video, _state.value.quality.name, _state.value.autoSave, _state.value.imageFormat.name)
         _state.update { it.copy(status = "Foreground batch started: ${uris.size} ${if (video) "videos" else "images"} queued on-device.") }
     }
 
-    private fun buildAuditDetail(quality: CompressionQuality, video: Boolean, durationMs: Long): CompressionAuditDetail =
+    private fun buildAuditDetail(quality: CompressionQuality, video: Boolean, format: ImageFormat, durationMs: Long): CompressionAuditDetail =
         CompressionAuditDetail(
             qualityPreset = quality.name,
-            targetBitrate = if (video) quality.videoBitrate else "JPEG q=${quality.imageQuality}",
+            targetBitrate = if (video) quality.videoBitrate else "${format.label} q=${quality.imageQuality}",
             resolutionScaling = if (video) {
                 if (quality == CompressionQuality.LOW) "scale=-2:720" else "scale=-2:1080"
             } else {
                 "max ${quality.maxDimension}px"
             },
             durationMs = durationMs,
-            mediaType = if (video) "video/mp4" else "image/jpeg"
+            mediaType = if (video) "video/mp4" else if (format == ImageFormat.JPEG) "image/jpeg" else "image/webp"
         )
 
     /** Single source for recording a successful compression into recent history. */
@@ -715,6 +722,37 @@ private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit
             }
         }
         item {
+            Text("Image output format", fontWeight = FontWeight.SemiBold)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ImageFormat.entries.forEach { format ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { vm.imageFormat(format) }
+                    ) {
+                        RadioButton(
+                            selected = state.imageFormat == format,
+                            onClick = { vm.imageFormat(format) },
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(format.label, fontWeight = FontWeight.Medium)
+                            Text(
+                                when (format) {
+                                    ImageFormat.JPEG -> "Universal, smallest on Android 3.x, off-device-safe"
+                                    ImageFormat.WEBP_LOSSY -> "Modern, ~25% smaller than JPEG at same quality (API 14+)"
+                                    ImageFormat.WEBP_LOSSLESS -> "Lossless, larger output — only when byte-identical matters (API 30+)"
+                                },
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
             Text("Compression quality", fontWeight = FontWeight.SemiBold)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CompressionQuality.entries.sortedByDescending { it.ordinal }.forEach { quality ->
@@ -1003,6 +1041,13 @@ suspend fun compressImageFile(context: Context, uri: Uri, quality: CompressionQu
     val output = File(context.cacheDir, "compressed_${UUID.randomUUID()}.jpg"); FileOutputStream(output).use { scaled.compress(Bitmap.CompressFormat.JPEG, quality.imageQuality, it) }; if (scaled !== bitmap) scaled.recycle(); bitmap.recycle(); output
 } catch (_: Exception) { null } }
 
+/** User-facing image output format selector. JPEG is the default (back-compatible, fail-closed). */
+enum class ImageFormat(val label: String, val webpMode: WebpMode?) {
+    JPEG("JPEG", null),
+    WEBP_LOSSY("WebP (lossy)", WebpMode.LOSSY),
+    WEBP_LOSSLESS("WebP (lossless)", WebpMode.LOSSLESS);
+}
+
 /** Lossy/lossless WebP encoding format for image compression (offline, on-device). */
 enum class WebpMode(val label: String) { LOSSY("WebP (lossy)"), LOSSLESS("WebP (lossless)") }
 
@@ -1039,6 +1084,21 @@ suspend fun compressImageFileAsWebP(
     if (scaled !== bitmap) scaled.recycle(); bitmap.recycle()
     output
 } catch (_: Exception) { null } }
+
+/** Single dispatcher for image/video compression; the real boundary the UI drives. */
+suspend fun compressMedia(
+    context: Context,
+    uri: Uri,
+    video: Boolean,
+    quality: CompressionQuality,
+    format: ImageFormat = ImageFormat.JPEG
+): File? = if (video) {
+    compressVideoFile(context, uri, quality)
+} else {
+    val mode = format.webpMode
+    if (mode == null) compressImageFile(context, uri, quality)
+    else compressImageFileAsWebP(context, uri, quality, mode)
+}
 
 suspend fun compressVideoFile(context: Context, uri: Uri, quality: CompressionQuality, onProgress: (Float) -> Unit = {}): File? = withContext(Dispatchers.IO) { try {
     val input = File(context.cacheDir, "video_in_${UUID.randomUUID()}.mp4"); context.contentResolver.openInputStream(uri)?.use { source -> FileOutputStream(input).use { source.copyTo(it) } } ?: return@withContext null

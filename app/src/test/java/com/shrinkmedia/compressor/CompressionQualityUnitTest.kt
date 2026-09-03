@@ -60,4 +60,16 @@ class CompressionQualityUnitTest {
         assertTrue("LOSSY must stay the primary/default option",
             WebpMode.LOSSY.label.contains("lossy"))
     }
+
+    @Test
+    fun imageFormatMapsToCorrectWebpModeAndDefaultsToJpeg() {
+        // The format selector is the real image-path entry point: JPEG is the WebP-less
+        // default (fail-closed), WEBP_LOSSY -> LOSSY, WEBP_LOSSLESS -> LOSSLESS.
+        assertEquals(null, ImageFormat.JPEG.webpMode)
+        assertEquals(WebpMode.LOSSY, ImageFormat.WEBP_LOSSY.webpMode)
+        assertEquals(WebpMode.LOSSLESS, ImageFormat.WEBP_LOSSLESS.webpMode)
+        // UiState must default to JPEG so the existing UX is unchanged unless a user
+        // explicitly opts into WebP (additive + no silent format surprise).
+        assertEquals(ImageFormat.JPEG, UiState().imageFormat)
+    }
 }
