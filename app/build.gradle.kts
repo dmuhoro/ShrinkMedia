@@ -25,12 +25,12 @@ android {
         }
     }
     namespace = "com.shrinkmedia.compressor"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.shrinkmedia.compressor"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 6
         versionName = "0.6.0"
 
