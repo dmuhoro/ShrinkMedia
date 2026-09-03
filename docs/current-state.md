@@ -21,7 +21,7 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C8 | DataStore settings persistence | ✅ | `SettingsRepository` flow; additive keys; fail-closed defaults |
 | C9 | PDF build / merge / split / metrics | ✅ | iText 7.2.5 (on-device, no INTERNET); `createPdfFromImages` (vector pages via `AreaBreak`), `mergePdfDocuments` (temp-file + `copyPagesTo`), `splitPdfIntoPages` (kept on `android.graphics.pdf` for bitmap fallback), `readPdfMetrics` (`PdfRenderer`); **device run PASS** |
 | C10 | PDF embedded-text extraction | ✅ | iText `PdfTextExtractor` + `LocationTextExtractionStrategy` (layout-aware X/Y positions; page headers between sections); temp-file + `PdfReader(File)`; honest "scan / OCR needed" when no embedded text; **device run PASS** |
-| C11 | AICore device-model handoff (Gemini Nano, on-device) | 🟡 **designed** | **ADR-011** (accepted, architecture): AICore + ML Kit GenAI; availability-gated; offline, no INTERNET added; inference foreground-only/quota-limited; not device-verified yet (no code) — stays unverified until its own sprint (ADR-011). Was plain ASPIRATIONAL; now a designed, sequenced path |
+| C11 | AICore device-model handoff (Gemini Nano, on-device) | 🟡 **implemented, build-verified — NOT hardware-proven** | **ADR-011**. `OnDeviceInferenceRepository` (fail-closed `Status` gate + `AiResult`) + Elite AI panel wired into MainActivity; real ML Kit GenAI `Generation/GenerativeModel` path guarded behind API 26; merged release manifest declares **no INTERNET**. 12 unit tests (5 new), lint 0 errors, release shrinks clean (Kotlin 2.2 + AGP 8.10). **A real Nano inference is NOT yet run on hardware (needs a Nano-capable device, L5)** — do not claim PASS on device. Evidence: `docs/evidence/2026-09-03_adr011_on_device_ai_surface.md` |
 | C12 | Real OCR (scanned PDFs/images) | ✅ | Implemented (ADR-009): ML Kit `text-recognition` via `OcrHelper` (typed-null, no INTERNET), `AiTab` "Scan reader"; **device walkthrough PASS** (reads "SHRINKMEDI" on API 36); R8-verified |
 | C13 | Signed, R8-minified release build (`com.shrinkmedia.compressor` v0.3.0) | ✅ | `app/build.gradle.kts` (minify + `signingConfigs.create("release")`); `apksigner verify` PASS on `app-release.apk` **signed with the production keystore** (`~/.android/keystores/shrinkmedia-release.jks`, gitignored `keystore.properties`); distributed via GitHub sideload |
 | C14 | Android instrumentation tests **written + executed on device** (JVM + instrumented) | ✅ | JVM unit tests green; **10/10** instrumented tests PASS on API-36 (Sprint 8 + video-compression v0.6.0 evidence) — incl. the new `compressVideoFile` real-path openh264 test |
@@ -39,15 +39,19 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 - **Compression/PDF helpers are shippable but device-untested.** The final
   verification pass (**Sprint 8**) must exercise the real paths on hardware and
   record it in `docs/evidence/`.
-- **Nothing under C11 may be claimed as delivered.** It remains ASPIRATIONAL
-  until implemented **and** verified (staged v2, ADR-010). C12 OCR is
+- **Nothing under C11 may be claimed as *hardware-delivered*.** It is now
+  **implemented and build-verified** (fail-closed gate + real GenAI path, no
+  INTERNET) but the actual on-device inference has **not** run on Nano hardware —
+  that's L5 and requires a Nano/AICore-capable device. C12 OCR is
   implemented **and** device-verified (reads "SHRINKMEDI" on API 36;
   `docs/evidence/2026-08-31_device_verification.md`).
 - **Release signing is complete.** The production keystore
   (`~/.android/keystores/shrinkmedia-release.jks`) is generated; `keystore.properties`
   references it and is gitignored (fail-closed if absent). `apksigner verify` PASS on
-  the v0.3.0 `app-release.apk`. **Backup the keystore + passwords off-machine — the
-  keystore is the app's permanent identity and cannot be recovered if lost.**
+  the v0.3.0 `app-release.apk`. **Backup the keystore off-machine — it is the app's
+  permanent identity and cannot be recovered if lost.** A verified checklist with the
+  live checksum anchor now exists (`docs/runbooks/keystore-backup.md`); performing the
+  off-machine copy is a human step not yet completed.
 
 ## Sprint Cross-Reference
 

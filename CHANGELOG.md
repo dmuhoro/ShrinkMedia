@@ -5,9 +5,23 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
-## [Unreleased] — 2026-09-03 (post-v0.6.0 follow-through)
+## [0.7.0] — 2026-09-03 (WebP + SDK36 + on-device AI surface + privacy)
+
+Native release (versionCode 7). Ships the WebP output option, the SDK-36 toolchain,
+the **real on-device "personal intelligence" surface** (ADR-011 via ML Kit GenAI /
+Gemini Nano — build-verified, hardware-gated), and the keystore backup runbook.
 
 ### Added
+- **On-device AI surface (ADR-011, L4b)**: `OnDeviceInferenceRepository`
+  (fail-closed `Status` gate + `AiResult` contract, real ML Kit GenAI
+  `Generation/GenerativeModel` path, guarded behind API 26, never cloud fallback)
+  and an **Elite AI** tab panel that probes availability, renders each gate honestly,
+  and only infers when AVAILABLE. 12 unit tests (5 new gate/result tests), lint
+  0 errors. Evidence:
+  `docs/evidence/2026-09-03_adr011_on_device_ai_surface.md`.
+- **Keystore off-machine backup runbook (L6)**: `docs/runbooks/keystore-backup.md`
+  + verified SHA256 anchor (`2ecf8c80...dca2d5b`). Evidence:
+  `docs/evidence/2026-09-03_keystore_off_machine_backup.md`.
 - **C5 real-path batch contract test** (+ test seam `executeBatchProcessingForTest`
   forwarding to the real `executeBatchProcessing` loop): proves a queued batch item
   is held at the pause gate then completed exactly once — never dropped/skipped.
@@ -31,14 +45,18 @@ All notable changes to ShrinkMedia are documented here, following
   compression competitors.
 
 ### Changed
+- **Toolchain (L2, L4a)**: compile/target SDK bumped to **API 36** (AGP 8.9.1,
+  Gradle 8.11.1 — later AGP 8.10.0 for Kotlin 2.2 R8 support); **Kotlin
+  2.0.21 → 2.2.0** required so ML Kit GenAI metadata links.
 - `docs/current-state.md`: C11/C17 moved from bare **ASPIRATIONAL** to **designed**
   (still unverified); C5 updated with the real storage-bound blocker instead of a
   vague "device run Sprint 8".
 
 ### Honest status
-- C5 device **run** and AI **implementation** are not yet verified on hardware;
-  architecture-only here. C5 is physically blocked by device storage, AI is gated
-  behind its own future sprints with their own evidence gates (Constitution Art. VII).
+- The on-device AI surface is **build-verified** (compiles, gates fail-closed on the
+  real library, release shrinks clean with NO INTERNET) but **not hardware-proven**
+  — a real Gemini Nano inference requires a Nano/AICore-capable device (L5). C5
+  device **run** also remains physically blocked by device storage.
 
 ## [0.6.0] — 2026-09-03 (branding + real working video compression)
 
