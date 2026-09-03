@@ -5,6 +5,10 @@ import android.graphics.Bitmap
 import androidx.core.content.FileProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.SessionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
@@ -51,6 +55,29 @@ class CompressionPipelineInstrumentedTest {
     private fun uriFor(file: File): android.net.Uri =
         FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
+    /**
+     * Generate a real, decodable high-bitrate H.264 MP4 on-device with FFmpegKit.
+     * `testsrc2` is chosen over `testsrc` because its detailed, high-entropy frames
+     * do not collapse under high target bitrates — so the generated source file is
+     * genuinely large (several MB), and re-encoding it via the production
+     * `compressVideoFile` path at the MEDIUM target (~1500k) must strictly shrink
+     * it. That makes the "output smaller than input" assertion meaningful against
+     * the real codec rather than a trivially-compressible synthetic.
+     */
+    private fun writeHighBitrateMp4(file: File, durationSec: Int = 6) {
+        val session = FFmpegKit.execute(
+            "-y -f lavfi -i testsrc2=size=1920x1080:rate=30 -t $durationSec " +
+                "-c:v h264 -b:v 8000k -pix_fmt yuv420p \"${file.absolutePath}\""
+        )
+        var waited = 0
+        while ((session.state == SessionState.CREATED || session.state == SessionState.RUNNING) && waited < 40_000) {
+            Thread.sleep(100); waited += 100
+        }
+        val rc = session.returnCode
+        assertTrue("input MP4 must encode before test proceeds (rc=$rc)", ReturnCode.isSuccess(rc))
+        assertTrue("input MP4 must exist on disk", file.exists() && file.length() > 0L)
+    }
+
     @Test
     fun compressImageFile_runsTheRealPipeline_andProducesASmallerValidJpeg() {
         runBlocking {
@@ -85,6 +112,38 @@ class CompressionPipelineInstrumentedTest {
             val output = compressImageFile(context, uriFor(bogus), CompressionQuality.MEDIUM)
             assertNull("non-decodable content must surface as null, never a bogus file", output)
             bogus.delete()
+        }
+    }
+
+    @Test
+    fun compressVideoFile_runsTheRealFFmpegKitPipeline_andProducesASmallerValidH264Mp4() {
+        runBlocking {
+            val inputFile = File(context.cacheDir, "video_in_${System.currentTimeMillis()}.mp4")
+            writeHighBitrateMp4(inputFile)
+            val inputSize = inputFile.length()
+
+            var lastProgress = 0f
+            val output = compressVideoFile(
+                context,
+                uriFor(inputFile),
+                CompressionQuality.MEDIUM,
+                onProgress = { lastProgress = it }
+            )
+
+            assertNotNull("real FFmpegKit compression must return an output file", output)
+            val out = output!!
+            assertTrue("output must exist", out.exists())
+            assertTrue("output must be non-empty", out.length() > 0L)
+            assertTrue("output must be smaller than input ($inputSize -> ${out.length()})", out.length() < inputSize)
+
+            val probe = FFmpegKit.execute("-v error -i \"${out.absolutePath}\" -f null -")
+            var probed = 0
+            while ((probe.state == SessionState.CREATED || probe.state == SessionState.RUNNING) && probed < 40_000) { Thread.sleep(100); probed += 100 }
+            assertTrue("output must be a decodable H.264 MP4", ReturnCode.isSuccess(probe.returnCode))
+            assertTrue("onProgress must have reported completion (100)", lastProgress >= 100f)
+
+            inputFile.delete()
+            out.delete()
         }
     }
 

@@ -106,9 +106,22 @@ dependencies {
     // android.graphics.pdf) provides OCR; ML Kit is on-device and privacy-safe.
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
-    // FFmpegKit (x264 video compression engine; maintained Central-published fork
-    // exposing the com.arthenica.ffmpegkit API used by MainActivity)
-    implementation("io.github.nikita36078:ffmpeg-kit:6.0.LTS")
+    // FFmpegKit FULL (video compression engine; LGPL, maintained Central-published
+    // fork exposing the com.arthenica.ffmpegkit API used by MainActivity).
+    // JUSTIFICATION (AGENTS §6): the previous audio-only "LTS/Lite" build
+    // (io.github.nikita36078:ffmpeg-kit:6.0.LTS) was proven on-device to contain NO
+    // H.264 encoder, NO x264, and NO MP4 muxer (config showed only wav/pcm/aresample
+    // after --disable-everything) — so compressVideoFile always failed. The `full`
+    // variant (audio + video + https) ships the openh264 H.264 encoder + MP4 muxer;
+    // non-GPL so it does not copyleft the closed-source app.
+    implementation("dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7")
+
+    // FFmpegKit runtime companion: FFmpegKitConfig.<clinit> resolves
+    // com.arthenica.smartexception.java.Exceptions at JVM-init time. The full
+    // 8.1.7 AAR does not declare it transitively (the old nikita36078 POM did), so
+    // it must be pulled explicitly or the app crashes NoClassDefFoundError on first
+    // FFmpegKit use.
+    implementation("com.arthenica:smart-exception-java:0.2.1")
 
     // iText7 (on-device PDF engine). New dependency justified (AGENTS §6):
     // android.graphics.pdf can render/merge pages but CANNOT extract embedded text

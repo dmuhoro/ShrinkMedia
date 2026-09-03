@@ -96,10 +96,10 @@ enum class OcrLanguage(val key: String, val label: String) {
         fun fromKey(key: String): OcrLanguage = entries.firstOrNull { it.key == key } ?: ENGLISH
     }
 }
-enum class CompressionQuality(val label: String, val imageQuality: Int, val maxDimension: Int, val videoCrf: Int, val videoBitrate: String) {
-    HIGH("High / best quality", 90, 2560, 23, "2500k"),
-    MEDIUM("Balanced", 75, 1920, 28, "1500k"),
-    LOW("Low / maximum savings", 55, 1280, 32, "800k")
+enum class CompressionQuality(val label: String, val imageQuality: Int, val maxDimension: Int, val videoBitrate: String, val videoMaxRate: String, val videoBufSize: String) {
+    HIGH("High / best quality", 90, 2560, "2500k", "5000k", "5000k"),
+    MEDIUM("Balanced", 75, 1920, "1500k", "3000k", "3000k"),
+    LOW("Low / maximum savings", 55, 1280, "800k", "1600k", "1600k")
 }
 enum class ToolkitTab(val label: String) { MEDIA("Media"), DOCUMENTS("Documents"), AI("Elite AI") }
 data class MediaResult(val name: String, val before: Long, val output: File, val isVideo: Boolean)
@@ -1006,7 +1006,7 @@ suspend fun compressImageFile(context: Context, uri: Uri, quality: CompressionQu
 suspend fun compressVideoFile(context: Context, uri: Uri, quality: CompressionQuality, onProgress: (Float) -> Unit = {}): File? = withContext(Dispatchers.IO) { try {
     val input = File(context.cacheDir, "video_in_${UUID.randomUUID()}.mp4"); context.contentResolver.openInputStream(uri)?.use { source -> FileOutputStream(input).use { source.copyTo(it) } } ?: return@withContext null
     val output = File(context.cacheDir, "compressed_video_${UUID.randomUUID()}.mp4"); val scale = if (quality == CompressionQuality.LOW) "scale=-2:720" else "scale=-2:1080"
-    val session = FFmpegKit.executeAsync("-y -i \"${input.absolutePath}\" -vf $scale -c:v libx264 -crf ${quality.videoCrf} -b:v ${quality.videoBitrate} -preset veryfast -c:a aac -b:a 128k \"${output.absolutePath}\"") { }
+    val session = FFmpegKit.executeAsync("-y -i \"${input.absolutePath}\" -vf $scale -c:v h264 -b:v ${quality.videoBitrate} -maxrate ${quality.videoMaxRate} -bufsize ${quality.videoBufSize} -c:a aac -b:a 128k \"${output.absolutePath}\"") { }
     while (session.state == SessionState.CREATED || session.state == SessionState.RUNNING) delay(100)
     input.delete(); onProgress(100f); if (ReturnCode.isSuccess(session.returnCode) && output.exists()) output else null
 } catch (_: Exception) { null } }
