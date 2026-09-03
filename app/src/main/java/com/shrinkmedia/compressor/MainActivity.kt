@@ -1003,6 +1003,43 @@ suspend fun compressImageFile(context: Context, uri: Uri, quality: CompressionQu
     val output = File(context.cacheDir, "compressed_${UUID.randomUUID()}.jpg"); FileOutputStream(output).use { scaled.compress(Bitmap.CompressFormat.JPEG, quality.imageQuality, it) }; if (scaled !== bitmap) scaled.recycle(); bitmap.recycle(); output
 } catch (_: Exception) { null } }
 
+/** Lossy/lossless WebP encoding format for image compression (offline, on-device). */
+enum class WebpMode(val label: String) { LOSSY("WebP (lossy)"), LOSSLESS("WebP (lossless)") }
+
+/**
+ * Compress an image to WebP (Bitmap.CompressFormat.WEBP / WEBP_LOSSESS) instead of JPEG.
+ * Adds a 2026-modern, offline output option (see docs/marketplace-2026-benchmark.md).
+ * Additive/back-compatible: `compressImageFile` (JPEG) is unchanged — legacy callers keep
+ * working. Returns null on failure (fail-closed), same contract as `compressImageFile`.
+ */
+suspend fun compressImageFileAsWebP(
+    context: Context,
+    uri: Uri,
+    quality: CompressionQuality,
+    mode: WebpMode = WebpMode.LOSSY
+): File? = withContext(Dispatchers.IO) { try {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0) return@withContext null
+    // Same adaptive downsampling+resize math as the JPEG path so quality presets stay consistent.
+    var sample = 1
+    while (bounds.outWidth / sample > quality.maxDimension * 2 || bounds.outHeight / sample > quality.maxDimension * 2) sample *= 2
+    val bitmap = context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
+    } ?: return@withContext null
+    val ratio = minOf(1f, quality.maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height))
+    val scaled = if (ratio < 1f) Bitmap.createScaledBitmap(bitmap, (bitmap.width * ratio).toInt(), (bitmap.height * ratio).toInt(), true) else bitmap
+    // Lossless WebP ignores the quality hint and loses no pixels; lossy uses imageQuality so
+    // the HIGH/MEDIUM/LOW savings ladder carries over meaningfully.
+    val format = if (mode == WebpMode.LOSSLESS && Build.VERSION.SDK_INT >= 30)
+        Bitmap.CompressFormat.WEBP_LOSSLESS
+    else Bitmap.CompressFormat.WEBP
+    val output = File(context.cacheDir, "compressed_${UUID.randomUUID()}.webp")
+    FileOutputStream(output).use { scaled.compress(format, quality.imageQuality, it) }
+    if (scaled !== bitmap) scaled.recycle(); bitmap.recycle()
+    output
+} catch (_: Exception) { null } }
+
 suspend fun compressVideoFile(context: Context, uri: Uri, quality: CompressionQuality, onProgress: (Float) -> Unit = {}): File? = withContext(Dispatchers.IO) { try {
     val input = File(context.cacheDir, "video_in_${UUID.randomUUID()}.mp4"); context.contentResolver.openInputStream(uri)?.use { source -> FileOutputStream(input).use { source.copyTo(it) } } ?: return@withContext null
     val output = File(context.cacheDir, "compressed_video_${UUID.randomUUID()}.mp4"); val scale = if (quality == CompressionQuality.LOW) "scale=-2:720" else "scale=-2:1080"

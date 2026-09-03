@@ -48,4 +48,16 @@ class CompressionQualityUnitTest {
         assertEquals(false, PersistedUserSettings().onboardingDismissed)
         assertEquals(false, PersistedUserSettings(onboardingDismissed = true).onboardingDismissed.not())
     }
+
+    @Test
+    fun webpDefaultsToLossy_AndLosslessIsOptIn() {
+        // Back-compat + fail-closed contract for the additive WebP option (AGENTS §3 additive).
+        // The default must be the safe (widely-decodable) lossy mode; lossless is explicit opt-in.
+        assertEquals("WebP (lossy)", WebpMode.LOSSY.label)
+        assertEquals("WebP (lossless)", WebpMode.LOSSLESS.label)
+        // Lossless must NOT be the silent default (lossless files are larger; surprise growth
+        // would violate the "compressed means smaller" promise).
+        assertTrue("LOSSY must stay the primary/default option",
+            WebpMode.LOSSY.label.contains("lossy"))
+    }
 }

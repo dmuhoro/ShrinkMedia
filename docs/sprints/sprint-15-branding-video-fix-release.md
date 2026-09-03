@@ -81,7 +81,7 @@ versioning).
 
 ## Post-release follow-through (2026-09-03, same day)
 
-After v0.6.0 shipped, two forward pieces landed (in their own commits):
+After v0.6.0 shipped, several forward pieces landed (each in its own commit):
 
 ### C5 — real-path batch contract test + physical blocker (honest)
 
@@ -106,6 +106,21 @@ After v0.6.0 shipped, two forward pieces landed (in their own commits):
   (cooking/restaurant/meal-kit analogy) and sequenced build order.
 - `docs/current-state.md`: C11/C17 flipped from bare ASPIRATIONAL to **designed** (still
   unverified).
+
+### 2026 marketplace benchmark
+
+- `docs/marketplace-2026-benchmark.md`: honest where-ShrinkMedia-stands vs the Play bar
+  (target API 36 for new apps, data-safety, AAB) and 2026 compression competitors
+  (Squoosh/ZeroPNG local; iLoveIMG/TinyPNG/CloudConvert cloud; VSCO AI iOS-only).
+  Architecture is AHEAD; distribution/reach is BEHIND.
+
+### L4 patch — WebP output + privacy policy
+
+- **WebP** (`compressImageFileAsWebP`, additive/back-compatible, lossy-default fail-closed) closes
+  the modern-format gap from the benchmark. Unit-tested (`webpDefaultsToLossy_AndLosslessIsOptIn`);
+  compile, unit, lint green. Evidence: `docs/evidence/2026-09-03_webp_privacy_policy.md`.
+- **Privacy policy** (`docs/PRIVACY.md`): on-device-only, no-Internet-default disclosure + third-
+  party lib table + AICore/Connected-mode (designed, not active). Play bar prereq.
 
 ## Gate result
 

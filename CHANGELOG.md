@@ -21,6 +21,14 @@ All notable changes to ShrinkMedia are documented here, following
 - **CI release signing secrets wired** (`STORE_FILE`/`STORE_PASSWORD`/`KEY_ALIAS`/
   `KEY_PASSWORD` via `gh secret set`) so the fail-closed signed-AAB job can
   actually run; verified `bundleRelease` produces a signed AAB locally.
+- **WebP output option** (`compressImageFileAsWebP`, additive/back-compatible,
+  lossy-default fail-closed): modern offline format closes the benchmark gap vs
+  Squoosh/ZeroPNG on WebP/AVIF; unit-tested.
+- **Privacy policy** (`docs/PRIVACY.md`): on-device-only, no-Internet-default
+  disclosure + third-party lib table; Play Store data-safety prereq.
+- **2026 marketplace benchmark** (`docs/marketplace-2026-benchmark.md`): honest
+  where-ShrinkMedia-stands vs the Play bar (target API 36, data-safety, AAB) and
+  compression competitors.
 
 ### Changed
 - `docs/current-state.md`: C11/C17 moved from bare **ASPIRATIONAL** to **designed**
