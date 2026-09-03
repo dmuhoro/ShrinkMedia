@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Foreground Service & Notification Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- On-device privacy invariant (AGENTS.md §2): the app declares NO INTERNET
+         permission. ML Kit's telemetry backend (com.google.android.datatransport
+         :transport-backend-cct) would merge android.permission.INTERNET into the
+         shipped APK; it is stripped here so every operation runs on-device with no
+         network permission. -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
 
     <!-- Scoped storage & File sharing provider support -->
     <application

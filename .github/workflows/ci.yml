@@ -124,6 +124,25 @@ jobs:
           name: app-release-aab
           path: app/build/outputs/bundle/release/app-release.aab
 
+      - name: Merged release manifest carries NO INTERNET permission
+        # Real-boundary privacy guard (AGENTS §1/§2): assert the FINAL merged
+        # release manifest (what actually ships) has no android.permission.INTERNET.
+        # The source manifest never declared it, so grepping source alone was a
+        # false-confidence gate while ML Kit's transport-backend-cct merged it in.
+        # tools:node="remove" strips it; this step fails if that ever regresses.
+        run: |
+          manifest=$(find app/build/intermediates/merged_manifest/release \
+            -name AndroidManifest.xml 2>/dev/null | head -1)
+          if [ -z "$manifest" ]; then
+            echo "SKIP: no merged release manifest found"
+            exit 0
+          fi
+          if rg -q "android\.permission\.INTERNET" "$manifest"; then
+            echo "FAIL: android.permission.INTERNET present in merged release manifest ($manifest)"
+            exit 1
+          fi
+          echo "PASS: merged release manifest declares no INTERNET permission"
+
   governance:
     name: Governance guardrails
     runs-on: ubuntu-latest

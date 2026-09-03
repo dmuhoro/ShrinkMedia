@@ -31,8 +31,8 @@ android {
         applicationId = "com.shrinkmedia.compressor"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -104,6 +104,12 @@ dependencies {
     // ML Kit on-device text recognition (OCR) — runs locally, no INTERNET.
     // New dependency justified: no existing lib (FFmpegKit/Coil/DataStore/
     // android.graphics.pdf) provides OCR; ML Kit is on-device and privacy-safe.
+    // PRIVACY (AGENTS §2): ML Kit's telemetry backend keeps its manifest's
+    // android.permission.INTERNET out of the shipped APK via a
+    // tools:node="remove" rule in AndroidManifest.xml (the CCT backend cannot be
+    // dependency-excluded because ML Kit's internal initializer
+    // com.google.android.gms.internal.mlkit_common.zzsp hard-references
+    // CCTDestination and R8 fails to minify without it).
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
     // FFmpegKit FULL (video compression engine; LGPL, maintained Central-published
