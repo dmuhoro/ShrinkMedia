@@ -134,7 +134,20 @@ class BatchCompressionService : Service() {
         return START_NOT_STICKY
     }
 
-    private suspend fun executeBatchProcessing(
+    /**
+     * Test seam (visible-in-package only): bypasses Android `Service`/notification
+     * bootstrap so an instrumented test can drive the REAL batch loop that
+     * `onStartCommand` invokes (Constitution: proof must exercise the real path,
+     * not a hand-rolled copy). Production call sites are unchanged.
+     */
+    internal suspend fun executeBatchProcessingForTest(
+        uris: List<Uri>,
+        isVideo: Boolean,
+        qualityName: String,
+        autoSave: Boolean
+    ) = executeBatchProcessing(uris, isVideo, qualityName, autoSave)
+
+    suspend fun executeBatchProcessing(
         uris: List<Uri>,
         isVideo: Boolean,
         qualityName: String,
