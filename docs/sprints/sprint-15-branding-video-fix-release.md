@@ -79,6 +79,34 @@ deploys. `docs/evidence/2026-09-02_public_web_presence.md` + run logs.
 Native **0.6.0** (versionCode 6); web package stays 0.4.0 (independent harness
 versioning).
 
+## Post-release follow-through (2026-09-03, same day)
+
+After v0.6.0 shipped, two forward pieces landed (in their own commits):
+
+### C5 — real-path batch contract test + physical blocker (honest)
+
+- Added package-visible seam `BatchCompressionService.executeBatchProcessingForTest`
+  that forwards to the **real** `executeBatchProcessing` (the loop `onStartCommand` drives),
+  and an instrumented test proving a queued item is held at the pause gate then completed
+  exactly once (never dropped/skipped). This closes an AGENTS §1 false-confidence gap — the
+  old contract test hand-rolled the wait instead of exercising the real loop.
+- **On-device run is physically blocked** by device storage (`INSTALL_FAILED_INSUFFICIENT_STORAGE`,
+  `/data` ~100% full); C5 is honestly NOT flipped to PASS. Evidence:
+  `docs/evidence/2026-09-03_batch_real_path_contract_test.md`.
+
+### AI architecture (ADR-011 on-device Nano + ADR-012 Connected mode)
+
+- **ADR-011** (on-device AICore/Gemini Nano): availability-gated, offline, NO INTERNET added,
+  foreground-only/quota-limited (architecture only). Grounded in 2026 research
+  (`docs/evidence/2026-09-03_ai_architecture_adr011_012.md`).
+- **ADR-012** (opt-in **Connected mode**): OFF-by-default cloud AI + Google Bridge; requires a
+  constitutional INTERNET change delivered as a separate build variant so the default stays
+  no-INTERNET (architecture only).
+- **`docs/personal-intelligence.md`**: the offline/online/cloud design + capability ladder
+  (cooking/restaurant/meal-kit analogy) and sequenced build order.
+- `docs/current-state.md`: C11/C17 flipped from bare ASPIRATIONAL to **designed** (still
+  unverified).
+
 ## Gate result
 
 All Android gates green on the v0.6.0 build. Evidence chain per Constitution

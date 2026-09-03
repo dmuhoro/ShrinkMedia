@@ -5,6 +5,33 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [Unreleased] — 2026-09-03 (post-v0.6.0 follow-through)
+
+### Added
+- **C5 real-path batch contract test** (+ test seam `executeBatchProcessingForTest`
+  forwarding to the real `executeBatchProcessing` loop): proves a queued batch item
+  is held at the pause gate then completed exactly once — never dropped/skipped.
+  Closes the AGENTS §1 false-confidence gap in the batch path. Evidence:
+  `docs/evidence/2026-09-03_batch_real_path_contract_test.md`.
+- **AI architecture (ADR-011, ADR-012, `docs/personal-intelligence.md`)**: the
+  sequenced on-device (Gemini Nano/AICore, ADR-011) and opt-in **Connected mode**
+  (cloud AI + Google Bridge, ADR-012) designs for the offline/online/cloud
+  "personal intelligence" vision. Architecture-only, grounded in 2026 research
+  (`docs/evidence/2026-09-03_ai_architecture_adr011_012.md`).
+- **CI release signing secrets wired** (`STORE_FILE`/`STORE_PASSWORD`/`KEY_ALIAS`/
+  `KEY_PASSWORD` via `gh secret set`) so the fail-closed signed-AAB job can
+  actually run; verified `bundleRelease` produces a signed AAB locally.
+
+### Changed
+- `docs/current-state.md`: C11/C17 moved from bare **ASPIRATIONAL** to **designed**
+  (still unverified); C5 updated with the real storage-bound blocker instead of a
+  vague "device run Sprint 8".
+
+### Honest status
+- C5 device **run** and AI **implementation** are not yet verified on hardware;
+  architecture-only here. C5 is physically blocked by device storage, AI is gated
+  behind its own future sprints with their own evidence gates (Constitution Art. VII).
+
 ## [0.6.0] — 2026-09-03 (branding + real working video compression)
 
 Native release (versionCode 6). Ships three things: the ChatGPT-generated
