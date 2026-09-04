@@ -4,6 +4,24 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.7.1 — Connected-mode Layer-1 foundation + personal ecosystem (2026-09-04, Sprint 18)
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| Version 0.7.1 / versionCode 8 | PASS | `app/build.gradle.kts`; badging |
+| Additive DataStore `connected_mode` (OFF default) + `connected_consent_shown` (false default) | PASS | `SettingsDataStore.kt`; on-device round-trip |
+| `ConnectedRepository` fail-closed gateway (`ConnectResult` Allowed/Off/Refused/Error, no silent drops) | PASS | 8 JVM tests green |
+| Consent UX (`ConnectedModeCard` + first-enable AlertDialog) | PASS | `MainActivity.kt`; assembleDebug + lint green |
+| JVM unit tests | PASS | 20 tests, 0 failures |
+| On-device real-path DataStore round-trip (write→read-back + fresh-instance disk read) | PASS | `ConnectedSettingsRoundTripTest`; full instrumented suite **OK (16 tests)** on API 36 |
+| `lintDebug` | PASS | 0 errors |
+| `assembleDebug` / `assembleDebugAndroidTest` | PASS | BUILD SUCCESSFUL |
+| `assembleRelease` (R8) | PASS | BUILD SUCCESSFUL |
+| Default DEBUG merged manifest declares NO INTERNET (new CI guard) | PASS | merged debug manifest: `rg android.permission.INTERNET` → no match |
+| Merged RELEASE manifest declares NO INTERNET | PASS | merged release manifest: no INTERNET |
+| Docs: sprint-18, CHANGELOG [0.7.1], current-state C17/C21, ecosystem + ADR-013, evidence | PASS | cited in sprint-18 + evidence |
+| Honest boundary: a live connected action / INTERNET variant = L2+ (owner hardware/credentials) | CONSENT (not PASS) | documented in `ADR-013` §5; C17 is foundation only |
+
 ## Gate: v0.7.0 — WebP + SDK36 + On-Device AI Surface + Privacy (2026-09-03, Sprint 16; device-run closure Sprint 17)
 
 | Criterion | Status | Citation / observed result |

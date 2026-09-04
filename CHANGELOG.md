@@ -5,6 +5,60 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.7.1] — 2026-09-04 (Connected-mode Layer-1 foundation + personal-ecosystem design)
+
+Native release (versionCode 8). Ships the **fail-closed foundation** for ShrinkMedia as the phone
+portal of the owner's personal ecosystem: an additive, OFF-by-default **Connected mode**
+(`connected_mode` / `connected_consent_shown`) with a typed, fail-closed
+`ConnectedRepository` gateway, a first-run **privacy-disclosure consent UX**, and a CI guard that
+asserts the **default debug AND release merged manifests carry NO INTERNET**. Also ships the
+ecosystem design (ADR-013 + `docs/ecosystem.md`) that ties ShrinkMedia (portal) to the future
+DataBank (separate repo, self-hosted server) over the MCP connectable layer. **No INTERNET is
+added — the default build stays offline and private.**
+
+### Added
+- **Connected mode foundation (ADR-012/013, Layer-1)** — the real, fail-closed seam for the
+  personal-ecosystem portal:
+  - **Additive DataStore settings** `connected_mode` (OFF default) + `connected_consent_shown`
+    (false default) in `SettingsDataStore.kt` — fail-closed, additive, never removed.
+    `updateConnectedMode()` / `updateConnectedConsentShown()`.
+  - **`ConnectedRepository`** — `ModeState` (OFF / CONSENT_REQUIRED / ON) decision + a typed,
+    fail-closed `ConnectResult` (Allowed / Off / Refused / Error). `run(...)` only executes a
+    connected block when EVERY gate holds (mode ON + consent shown + explicitly invoked); any
+    failure surfaces a typed error — **no silent drops** (Constitution I.4/I.6).
+  - **Real-path proof**: `ConnectedRepositoryUnitTest` (8 JVM tests) + new on-device
+    `ConnectedSettingsRoundTripTest` — drives the **real** `SettingsRepository` over the on-device
+    DataStore, asserts OFF-by-default, write→read-back persistence, and that a **fresh**
+    repository reads `connected_mode`/`connected_consent_shown` from disk (not an in-memory cache).
+    Full instrumented suite on the Redmi API-36 handset: **OK (16 tests)** (was 13).
+  - **Consent UX** (`ConnectedModeCard` in the Elite AI tab): shows the honest Connected-mode
+    state, a switch, and a first-enable **AlertDialog** that requires the user to acknowledge the
+    ADR-012 privacy disclosure before Connected mode turns ON; `Not now` fails closed. Nothing
+    connects unless explicitly enabled *and* consent is acknowledged.
+- **CI no-INTERNET guard strengthened to the default build** (`.github/workflows/ci.yml`): a new
+  step asserts the **merged DEBUG manifest** (the default install) declares no
+  `android.permission.INTERNET`, alongside the existing merged-release guard. Real-boundary,
+  fail-closed: any dependency that merges INTERNET into the default build fails CI.
+- **Personal-ecosystem design (ADR-013 + `docs/ecosystem.md`)**: DataBank = **separate repo /
+  server** (same founder, independent lifecycle, shared MCP `vault.*` contract — not inside the
+  APK); the connectable layer speaks **MCP**; ShrinkMedia = the phone portal. Documents the "Founder's
+  Engine" vision (autonomous product factory, safety net, virtual-me/guardian, metacognition,
+  polymath knowledge base), the honest **can/cannot automate** boundary, the 80/20 **schedule**
+  (L1–L4 ≈ first ~2 months for daily-operational value), and the **compute floor** (RTX 3090+
+  24 GB + Mac mini ≈ $2,500–4,500). See `docs/sprints/sprint-18-*` + evidence.
+
+### Changed
+- Version bumped to **0.7.1** (`versionCode 8`).
+- `docs/current-state.md`: C17 moved from **designed** → **🟡 foundation-implemented (offline-gated,
+  seam only — no connected action yet)**; honest note that a real connected action / INTERNET
+  variant is L2+ and still needs the owner's hardware/credentials.
+
+### Honest status
+- Connected mode is only the **Layer-1 foundation**: a fail-closed seam + consent + persisted,
+  verified settings. **No actual network action exists yet** and **NO INTERNET permission is
+  added** — the real DataBank transfer contract and the connected (INTERNET) variant are L2+ and
+  are a dedicated future program per ADR-013 §5.
+
 ## [0.7.0] — 2026-09-03 (WebP + SDK36 + on-device AI surface + privacy)
 
 Native release (versionCode 7). Ships the WebP output option, the SDK-36 toolchain,
