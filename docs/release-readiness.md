@@ -4,6 +4,25 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.8.0 — Operational Workflow (SOP + Forge engine) catch-up release (2026-09-04, Sprint 19)
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| Version 0.8.0 / versionCode 9 | PASS | `app/build.gradle.kts`; APK badging |
+| Code ↔ GitHub release drift reconciled (old Latest = v0.6.0, code was 0.7.1) | PASS | v0.8.0 tag + release published; CHANGELOG catch-up note |
+| `ForgeTask` deterministic state machine (queued→…→merged/blocked, no silent drops) | PASS | 12 JVM tests green |
+| `EcosystemIndex` searchable corpus (offline keyword index, fail-closed) | PASS | 11 JVM tests green |
+| `LessonBook` lessons capture (Phase 9, corpus-backed) | PASS | 6 JVM tests green |
+| `ModelRouter` seam (online open-weight / offline local fallback, OFF default) | PASS | 11 JVM tests green |
+| SOP (`docs/operations/SOP.md`) + ADR-014 | PASS | case study #1 evidence runs phases 0–9 |
+| JVM unit tests | PASS | 60 tests, 0 failures |
+| `lintDebug` | PASS | 0 errors (29 informational warnings) |
+| `assembleDebug` | PASS | BUILD SUCCESSFUL |
+| `assembleRelease` (R8) + default DEBUG/RELEASE merged manifests NO INTERNET | PASS | badging + `rg android.permission.INTERNET` → no match |
+| CI (Governance / Web / Android / signed release AAB) | PASS | all jobs green on push |
+| Docs: sprint-19, CHANGELOG [0.8.0], current-state C22/C23, release-readiness | PASS | cited in sprint-19 + this table |
+| Honest boundary: ModelRouter is decision-only (no real inference/network); engine lifts into future Forge repo | CONSENT (not PASS) | ADR-014; the open-weight/local serving needs owner hardware (ADR-013 L2+) |
+
 ## Gate: v0.7.1 — Connected-mode Layer-1 foundation + personal ecosystem (2026-09-04, Sprint 18)
 
 | Criterion | Status | Citation / observed result |

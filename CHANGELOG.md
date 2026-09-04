@@ -5,6 +5,81 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.8.0] — 2026-09-04 (Operational Workflow — the SOP + Forge portable engine)
+
+> **Catch-up release.** This is the first GitHub release since **v0.6.0**. The v0.7.0 and v0.7.1
+> milestones (WebP + SDK36 + on-device AI surface + privacy, then the Connected-mode C17
+> foundation + ecosystem design) were implemented, tested, documented, and shipped in the codebase
+> but **never tagged/released**. v0.8.0 therefore bundles that unreleased work **plus** the new
+> Operational Workflow engine into one coherent capability milestone, so the published version
+> matches what the release actually contains (ADR-014 versioning §"honest thoughts"): `0.x.0` =
+> capability block, `0.x.y` = patch on a shipped block, versionCode always monotonic.
+
+Process/engineering + capability release (versionCode 9). Ships **ADR-014** + `docs/operations/SOP.md`
+(the codified SDLC for operating like an organisation: intake → PRD → architecture → build →
+verify → review → evidence/docs → release gate → commit/push → lessons), and the **portable
+Forge workflow engine** implemented in ShrinkMedia as **case study #1** (to be lifted into the
+future Forge repo unchanged, ADR-013/014).
+
+> The SOP makes "how we build" explicit and executable: it turns the implicit SDLC into a
+> deterministic pipeline. The engine (`ForgeTask`, `EcosystemIndex`, `LessonBook`, `ModelRouter`)
+> encodes exactly that lifecycle so the process is auditable, not a poster. The open-source-AI
+> edge (online → free open-weight model; offline → local fallback) is added as a **decision seam
+> only** — NO INTERNET is added and the default build stays offline and private.
+
+### Added
+- **`docs/operations/SOP.md`** — the Standard Operating Procedure governing the whole SDLC:
+  operating doctrine (PM/Principal/EM/Lead hats + ten invariants incl. fail-closed, real-boundary,
+  no silent drops, evidence-over-narrative), the deterministic task lifecycle (phases 0–9), the
+  per-phase artifact table, a **Definition of Done checklist** for every task, the Reviewer-gate
+  review checklist + evals discipline, cadence, and the **productivity/scale telemetry model**
+  (measured velocity, not guesses; calibration-0 anchored to real git history — 104 commits / 18
+  sprints / 14 ADRs / 27 evidence files over 6 committed days; model steps 60–100%).
+- **ADR-014** — Operational Workflow as a **portable, repo-neutral core** implemented first in
+  ShrinkMedia (case study #1) and carried into the Forge repo later; the **ModelRouter seam**
+  (free open-source AI online, local fallback offline — Connected-mode-only, OFF by default).
+- **`ForgeTask`** (`app/src/main/java/com/shrinkmedia/compressor/forge/ForgeTask.kt`) — the
+  deterministic state machine encoding the SOP lifecycle (`queued → retrieving → building →
+  reviewing → changes_requested → merged` / `blocked`); **no silent drops** (blocked routes to the
+  human, never auto-retried); terminal states never resurrect; full history. 12 unit tests.
+- **`EcosystemIndex`** (`forge/EcosystemIndex.kt`) — the local, deterministic, offline
+  "search-up-the-ecosystem" corpus seed: chunked docs → inverted index → ranked keyword search
+  with snippets; fail-closed (empty corpus/blank query ⇒ empty, never null); idempotent adds. 11
+  unit tests. **Honest scope:** a keyword index (not semantic retrieval — that is the later Forge
+  RAG layer).
+- **`LessonBook`** (`forge/LessonBook.kt`) — Phase-9 lessons-learned capture written into the
+  corpus so every completed task is retrievable next time (never re-invent the wheel); validated
+  non-blank mandatory fields; duplicate-id idempotent. 6 unit tests.
+- **`ModelRouter`** (`forge/ModelRouter.kt`) — the typed, fail-closed routing decision
+  (`AllowedRemote` open-weight online / `AllowedLocal` offline fallback / `Off` / `Refused` /
+  `Unavailable` with reason). Preconditions mirror `ConnectedRepository` exactly; **decision only,
+  no network call, no INTERNET in the default build**. 11 unit tests.
+- **Case study #1 evidence** (`docs/evidence/2026-09-04_forge_l1_operational_workflow.md`) — the
+  EcosystemIndex task executed **through** the SOP phases 0→9, producing the working corpus + a
+  captured lesson (`case-001-ecosystem-index`).
+- **Catch-up release content** (implemented in v0.7.0/v0.7.1, now published): WebP output, SDK-36
+  toolchain, on-device AI surface + IO-thread wiring (ADR-011), Connected-mode C17 foundation
+  (additive OFF-default settings + fail-closed `ConnectedRepository` + consent UX), ecosystem
+  design (ADR-013 + `docs/ecosystem.md`), CI no-INTERNET guard on the merged debug manifest, and
+  the on-device feature benchmark. See the `[0.7.1]` / `[0.7.0]` sections below for full detail —
+  those entries are now also shipped in this release.
+
+### Changed
+- **Full suite green: 60 JVM unit tests, 0 failures** (was 20); lintDebug **0 errors**;
+  assembleDebug green. Debug merged manifest still declares **no INTERNET**.
+- `docs/current-state.md` — added C22 (Forge workflow engine) / C23 (SOP as governing process).
+- Version bumped to **0.8.0** (`versionCode 9`).
+
+### Honest status
+- The engine is **decision/test logic only** — pure Kotlin, zero I/O, zero network. The open-weight
+  and local inference that the ModelRouter *routes to* require the owner's home-lab GPU /
+  DataBank-Forge hosts (ADR-013 L2+) and remain a dedicated future program. The SOP §6 telemetry
+  model is the honest waypoint that turns "percent of building-at-scale potential" from an
+  assumption into a measured number.
+- **Released-version alignment fixed:** the previous GitHub "Latest" was v0.6.0 while code had
+  advanced to v0.7.1 unreleased. v0.8.0 reconciles code ↔ published state so the distribution trail
+  matches capability. `0.x.y` is reserved for genuine follow-up patches on a shipped block.
+
 ## [0.7.1] — 2026-09-04 (Connected-mode Layer-1 foundation + personal-ecosystem design)
 
 Native release (versionCode 8). Ships the **fail-closed foundation** for ShrinkMedia as the phone
