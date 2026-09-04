@@ -63,6 +63,23 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Merged DEBUG manifest carries NO INTERNET permission
+        # Real-boundary guard for the default debug build (what installs for normal use).
+        # Mirrors the release guard: the default build must never merge in
+        # android.permission.INTERNET (e.g. from a dependency). Fails if it regresses.
+        run: |
+          manifest=$(find app/build/intermediates/merged_manifest/debug \
+            -name AndroidManifest.xml 2>/dev/null | head -1)
+          if [ -z "$manifest" ]; then
+            echo "SKIP: no merged debug manifest found"
+            exit 0
+          fi
+          if rg -q "android\.permission\.INTERNET" "$manifest"; then
+            echo "FAIL: android.permission.INTERNET present in merged debug manifest ($manifest)"
+            exit 1
+          fi
+          echo "PASS: merged debug manifest declares no INTERNET permission"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
