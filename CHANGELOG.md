@@ -43,6 +43,17 @@ Gemini Nano — build-verified, hardware-gated), and the keystore backup runbook
 - **2026 marketplace benchmark** (`docs/marketplace-2026-benchmark.md`): honest
   where-ShrinkMedia-stands vs the Play bar (target API 36, data-safety, AAB) and
   compression competitors.
+- **On-device feature benchmark** (`OnDevicePerformanceBenchmark`): drives the real
+  `compressImageFile` / `compressImageFileAsWebP` / `compressVideoFile` /
+  `createPdfFromImages` / `mergePdfDocuments` / `extractRawTextFromUri` /
+  `OcrHelper.recognizeText` on hardware with representative inputs, measuring wall-clock
+  and verifying valid output inside a no-hang bound. **On the Redmi API-36 test handset
+  all 7 complete in under ~3 s (heaviest = video ~2.8 s for a 4 s clip) — no hang, no
+  degradation.** Evidence: `docs/evidence/2026-09-04_on_device_feature_benchmark.md`.
+- **AI IO-thread wiring (future-device readiness)**: `OnDeviceInferenceRepository`
+  `checkStatus()` and `generateContent(...)` now run on `Dispatchers.IO`, so when a
+  Nano-capable device is present the on-device model runs off the main thread and does
+  not degrade the app. Non-capable devices still fail closed (`UNAVAILABLE`, no cost).
 
 ### Changed
 - **Toolchain (L2, L4a)**: compile/target SDK bumped to **API 36** (AGP 8.9.1,
@@ -52,11 +63,30 @@ Gemini Nano — build-verified, hardware-gated), and the keystore backup runbook
   (still unverified); C5 updated with the real storage-bound blocker instead of a
   vague "device run Sprint 8".
 
+### Fixed
+- **C5 real-path batch test now executes on hardware.** The instrumented contract
+  test (drives the real `executeBatchProcessing` loop) previously "compiled but
+  never ran" — blocked by device storage. Once the device had space, running it
+  surfaced **two genuine seam defects** that are now fixed in production code,
+  not masked in the test:
+  - `attachTestContext(Context)` attaches a real app base context and reuses the
+    same `initRuntimeDependencies()` (notification manager + channel) as `onCreate`,
+    so the loop's audit-logging and compression plumbing run for real (no null
+    `applicationContext` NPE, no uninitialized `notificationManager`).
+  - The end-of-run `stopForeground`/`stopSelf` is guarded behind `startedBySystem`
+    (true only when Android actually started the service), preventing an
+    unattached-service `NullPointerException` — production teardown is unchanged.
+  On-device result: **OK (4 tests)** for the batch suite, **OK (13 tests)** for the
+  full instrumented suite (incl. the new feature benchmark), 12 JVM unit tests green,
+  lint 0 errors. Evidence:
+  `docs/evidence/2026-09-03_batch_real_path_contract_test.md`. The original
+  2026-09-03 storage block is superseded; C5 is now **✅ on-device PASS**.
+
 ### Honest status
 - The on-device AI surface is **build-verified** (compiles, gates fail-closed on the
   real library, release shrinks clean with NO INTERNET) but **not hardware-proven**
-  — a real Gemini Nano inference requires a Nano/AICore-capable device (L5). C5
-  device **run** also remains physically blocked by device storage.
+  — a real Gemini Nano inference requires a Nano/AICore-capable device (L5). C5's
+  device run — previously blocked by storage — is now **completed on-device PASS**.
 
 ## [0.6.0] — 2026-09-03 (branding + real working video compression)
 

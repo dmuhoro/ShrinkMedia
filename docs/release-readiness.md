@@ -4,6 +4,29 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.7.0 — WebP + SDK36 + On-Device AI Surface + Privacy (2026-09-03, Sprint 16; device-run closure Sprint 17)
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| Compile/target SDK 36 + Kotlin 2.2 + AGP 8.10 toolchain | PASS | `docs/evidence/2026-09-03_sdk36_toolchain_bump.md`, `kotlin_2_2_bump.md`; full suite green |
+| WebP output option (lossy/lossless, fail-closed default) | PASS | `docs/evidence/2026-09-03_webp_in_image_ui.md`; unit-tested |
+| On-device AI surface (ADR-011): GenAI repo + Elite AI panel, no INTERNET | PASS (build) | `docs/evidence/2026-09-03_adr011_on_device_ai_surface.md`; merged release manifest NO INTERNET |
+| On-device AI hardware proof (L5) — honest | CONSENT (not PASS) | real `checkStatus()` on Redmi API-36 → **UNAVAILABLE** (non-Nano SoC, no AICore). `docs/evidence/2026-09-03_on_device_ai_verification_l4c_l5.md`. Not claimed hardware-delivered |
+| AI IO-thread wiring (future-device readiness) | PASS | `OnDeviceInferenceRepository` probe + inference on `Dispatchers.IO`; 12 JVM tests green. `docs/evidence/2026-09-04_on_device_feature_benchmark.md` |
+| On-device feature-function benchmark (excl. AI): JPEG/WebP/video/PDF/OCR | PASS | `OnDevicePerformanceBenchmark` on API-36: all 7 complete in <3 s each, no hang. `docs/evidence/2026-09-04_on_device_feature_benchmark.md` |
+| C5 batch real-path contract test executed on hardware | PASS | on-device **OK (4 tests)**; seam defects fixed in production code. `docs/evidence/2026-09-03_batch_real_path_contract_test.md` |
+| Full instrumented suite on device | PASS | **OK (13 tests)** on API 36 |
+| JVM unit tests | PASS | 12 tests, 0 failures |
+| `lintDebug` | PASS | 0 errors |
+| Signed release AAB (bundleRelease, fail-closed on secrets) | PASS | signed AAB built under AGP 8.10; CI release job green |
+| Keystore off-machine backup | BLOCKED (human) | runbook + checksum ready; physical copy not yet performed (human step). `docs/evidence/2026-09-03_keystore_off_machine_backup.md` |
+| GitHub Release `v0.7.0` + Play distribution | PENDING | not yet tagged/published; requires human release action |
+
+**Go/no-go note:** v0.7.0 is code-complete and CI-green with all device-runnable gates
+PASS. Two rows keep it short of a fully "released" claim — the **keystore off-machine
+copy** (human) and **tagging + Play distribution** (human). The AI surface is build +
+on-device-probe verified but **not** Nano-proven (hardware-dependent, honestly flagged).
+
 ## Gate: v0.6.0 — Branding + Working Video Compression + CI-Proof (2026-09-03, Sprint 15)
 
 | Item | Status | Evidence |

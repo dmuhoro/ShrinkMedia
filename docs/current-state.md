@@ -1,6 +1,6 @@
 # ShrinkMedia — Current State
 
-> Orientation doc: **what is real vs ASPIRATIONAL**, as of 2026-09-03.
+> Orientation doc: **what is real vs ASPIRATIONAL**, as of 2026-09-04.
 > Read before any task (AGENTS.md §7). If a task assumes a capability marked
 > **ASPIRATIONAL**, stop and say so before building on it.
 
@@ -15,7 +15,7 @@ Legend: ✅ implemented & verified • ⚠️ implemented, device run pending �
 | C2 | Web simulator (Vite+React+TS) lint/build/tests | ✅ | `npm run lint` / `npm test` (18) / `npm run build` green (Sprint 7 evidence) |
 | C3 | Image compression (bitmap sampling + JPEG) | ✅ | Helper `compressImageFile`; JVM-verified math mirror in `src/lib`; **device run PASS** (Sprint 8: real pipeline → smaller valid JPEG; fail-closed `null` on unusable input) |
 | C4 | Video compression (FFmpegKit openh264, preset CRF/bitrate) | ✅ | `compressVideoFile` awaits session state; **on-device PASS** (instrumented test generates a real source and re-encodes it smaller + decodable via `-c:v h264`). Moved to LGPL `ffmpeg-kit-full:8.1.7` — the previous audio-only `:6.0.LTS` build had NO x264/H.264/MP4 muxer (proven on-device rc=1 `Unrecognized option preset`), so compression silently returned null. armeabi-v7a/x86 are not shipped by the full AAR (arm64-v8a + x86_64 only) |
-| C5 | Foreground batch service + progress notification | ⚠️ | `BatchCompressionService` wired into Media tab (`startBatch`); **device run blocked by device storage** (see `docs/evidence/2026-09-03_batch_real_path_contract_test.md`). A real-path instrumented contract test (drives the actual `executeBatchProcessing` loop via the `executeBatchProcessingForTest` seam, asserts a queued item is held at the pause gate then completed — never dropped) is written + compiles green, but has NOT run on hardware, so C5 is not claimed PASS |
+| C5 | Foreground batch service + progress notification | ✅ | `BatchCompressionService` wired into Media tab (`startBatch`); **on-device PASS** — the real-path contract test (drives the actual `executeBatchProcessing` loop via the `executeBatchProcessingForTest` seam, asserts a queued item is held at the pause gate then completed — never dropped) ran on device `49IZ6DJ7SONNQOBE`: **OK (4 tests)**, full instrumented suite **OK (12 tests)**. Running it on hardware surfaced + fixed two real seam defects (null base context; uninitialized `notificationManager`; invalid teardown on an unattached service — see `docs/evidence/2026-09-03_batch_real_path_contract_test.md`). C5 is no longer "device run pending". Note: the original 2026-09-03 storage-blocked run (`INSTALL_FAILED_INSUFFICIENT_STORAGE`) has since been superseded by the successful on-device run |
 | C6 | Battery-aware pause/resume (opt-in) | ✅ | Controller + receiver; instrumented `BatchPauseContractTest` proves the pause gate never drops an item **on-device PASS** (battery pause holds worker until resumed) |
 | C7 | Autosave to MediaStore (opt-in, no permission) | ✅ | `saveToPublicMediaStore` returns Boolean; instrumented test covers insert **on-device PASS** (gallery autosave) |
 | C8 | DataStore settings persistence | ✅ | `SettingsRepository` flow; additive keys; fail-closed defaults |
