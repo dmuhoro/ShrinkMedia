@@ -25,6 +25,8 @@ data class PersistedUserSettings(
     val ocrLanguage: String = OcrLanguage.ENGLISH.key,
     val enableBatch: Boolean = false,
     val onboardingDismissed: Boolean = false,
+    val connectedMode: Boolean = false,
+    val connectedConsentShown: Boolean = false,
     val totalHistoricalSavedBytes: Long = 0L,
     val totalHistoricalFilesCount: Long = 0L
 )
@@ -40,6 +42,8 @@ class SettingsRepository(private val context: Context) {
         val OCR_LANGUAGE = stringPreferencesKey("ocr_language")
         val ENABLE_BATCH = booleanPreferencesKey("enable_batch")
         val ONBOARDING_DISMISSED = booleanPreferencesKey("onboarding_dismissed")
+        val CONNECTED_MODE = booleanPreferencesKey("connected_mode")
+        val CONNECTED_CONSENT_SHOWN = booleanPreferencesKey("connected_consent_shown")
         val TOTAL_SAVED_BYTES = longPreferencesKey("total_saved_bytes")
         val TOTAL_FILES_COUNT = longPreferencesKey("total_files_count")
     }
@@ -71,6 +75,12 @@ class SettingsRepository(private val context: Context) {
             val enableBatch = preferences[PreferencesKeys.ENABLE_BATCH] ?: false
             val onboardingDismissed = preferences[PreferencesKeys.ONBOARDING_DISMISSED] ?: false
 
+            // Connected mode (ADR-012/013): additive, OFF-by-default (fail closed). Nothing
+            // may assume this is enabled; the value defaults to false and every connected
+            // action is gated on both this flag AND an explicit per-action invocation.
+            val connectedMode = preferences[PreferencesKeys.CONNECTED_MODE] ?: false
+            val connectedConsentShown = preferences[PreferencesKeys.CONNECTED_CONSENT_SHOWN] ?: false
+
             val savedBytes = preferences[PreferencesKeys.TOTAL_SAVED_BYTES] ?: 0L
             val filesCount = preferences[PreferencesKeys.TOTAL_FILES_COUNT] ?: 0L
 
@@ -83,6 +93,8 @@ class SettingsRepository(private val context: Context) {
                 ocrLanguage = ocrLanguage,
                 enableBatch = enableBatch,
                 onboardingDismissed = onboardingDismissed,
+                connectedMode = connectedMode,
+                connectedConsentShown = connectedConsentShown,
                 totalHistoricalSavedBytes = savedBytes,
                 totalHistoricalFilesCount = filesCount
             )
@@ -121,6 +133,24 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateOnboardingDismissed(dismissed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.ONBOARDING_DISMISSED] = dismissed
+        }
+    }
+
+    /**
+     * Sets whether Connected mode is enabled. Additive + fail-closed (ADR-012/013). The UI must
+     * gate any call to `true` behind the explicit privacy disclosure ([updateConnectedConsentShown])
+     * on first enable — the repository never enables it on its own.
+     */
+    suspend fun updateConnectedMode(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CONNECTED_MODE] = enabled
+        }
+    }
+
+    /** Records that the Connected-mode privacy disclosure has been acknowledged (first-run consent). */
+    suspend fun updateConnectedConsentShown(shown: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CONNECTED_CONSENT_SHOWN] = shown
         }
     }
 
