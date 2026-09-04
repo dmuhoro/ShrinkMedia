@@ -143,6 +143,8 @@ data class UiState(
     val ocrLanguage: OcrLanguage = OcrLanguage.ENGLISH,
     val enableBatch: Boolean = false,
     val showSettings: Boolean = false,
+    val connectedMode: Boolean = false,
+    val connectedConsentShown: Boolean = false,
     val mediaResult: MediaResult? = null, val imageUris: List<Uri> = emptyList(), val mergeUris: List<Uri> = emptyList(), val pdfUri: Uri? = null,
     val pdfMetrics: PdfMetrics? = null, val documentOutput: File? = null, val extractedText: String = "",
     val ocrUri: Uri? = null, val ocrText: String? = null, val ocrStatus: String = "",
@@ -187,6 +189,8 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
                         ocrLanguage = OcrLanguage.fromKey(saved.ocrLanguage),
                         enableBatch = saved.enableBatch,
                         onboardingDismissed = saved.onboardingDismissed,
+                        connectedMode = saved.connectedMode,
+                        connectedConsentShown = saved.connectedConsentShown,
                         totalSavedBytes = saved.totalHistoricalSavedBytes,
                         totalFiles = saved.totalHistoricalFilesCount
                     )
@@ -235,6 +239,26 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { settings.updatePauseCompressionOnLowBattery(enabled) }
     }
     fun showSettings(show: Boolean) = _state.update { it.copy(showSettings = show) }
+
+    /**
+     * Turns Connected mode on/off. Enabling is gated by the consent flow ([acknowledgeConnectedConsent])
+     * in the UI; this only persists the flag. Disabling is always allowed and immediate (fail-closed).
+     */
+    fun setConnectedMode(enabled: Boolean) {
+        _state.update { it.copy(connectedMode = enabled) }
+        viewModelScope.launch { settings.updateConnectedMode(enabled) }
+        _toast.tryEmit(if (enabled) "Connected mode enabled" else "Connected mode disabled — no data leaves this device")
+    }
+
+    /** Records that the user acknowledged the Connected-mode privacy disclosure (ADR-012 first-run consent). */
+    fun acknowledgeConnectedConsent() {
+        _state.update { it.copy(connectedConsentShown = true, connectedMode = true) }
+        viewModelScope.launch {
+            settings.updateConnectedConsentShown(true)
+            settings.updateConnectedMode(true)
+        }
+        _toast.tryEmit("Connected mode enabled for the personal ecosystem")
+    }
     fun images(uris: List<Uri>) = _state.update { it.copy(imageUris = uris, documentOutput = null) }
     fun mergePdfs(uris: List<Uri>) = _state.update { it.copy(mergeUris = uris, documentOutput = null) }
 
@@ -888,6 +912,7 @@ private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit
     item { Card { Column(Modifier.padding(16.dp)) { Text("Scan reader (OCR)", fontWeight = FontWeight.Bold); Text("Reads printed ${state.ocrLanguage.label} text from a photo or scan — fully on-device via ML Kit, no model download and no upload. (Handwriting recognition is not yet supported.)", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Button({ pickOcrImage() }, enabled = !state.busy) { Text(if (state.busy) "Working…" else "Choose scan image") } } } }
     if (state.ocrUri != null) item { Card { Column(Modifier.padding(16.dp)) { Text(state.ocrStatus, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp); if (!state.ocrText.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Text(state.ocrText.take(12000), fontSize = 13.sp) } } } }
     item { PersonalIntelligenceCard() }
+    item { ConnectedModeCard(state, vm) }
 }
 
 @Composable private fun PersonalIntelligenceCard() {
@@ -955,6 +980,79 @@ private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit
             }
             Text("Privacy: hosts the on-device model, never uploads. If the model is missing or the OS is too old, this card refuses instead of falling to the cloud.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable private fun ConnectedModeCard(state: UiState, vm: ToolkitViewModel) {
+    var showDisclosure by remember { mutableStateOf(false) }
+    val connectedState = ConnectedRepository.modeState(state.connectedMode, state.connectedConsentShown)
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Cloud, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("Connected mode — personal ecosystem", fontWeight = FontWeight.Bold)
+            }
+            Text(
+                "OFF by default. When enabled, this is the foundation for connecting this device to " +
+                        "your personal DataBank and ecosystem (push/pull your files, cloud AI) — inside this " +
+                        "build nothing connects yet, but everything future is gated here.",
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            when (connectedState) {
+                ConnectedRepository.ModeState.OFF ->
+                    Text("Connected mode is OFF. No file or text ever leaves this device.", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                ConnectedRepository.ModeState.CONSENT_REQUIRED ->
+                    Text("Review the privacy disclosure below to enable Connected mode.", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                ConnectedRepository.ModeState.ON ->
+                    Text("Connected mode is ON. A visible, per-action confirmation is required before anything leaves this device.", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+            }
+            Toggle("Connected mode", state.connectedMode) { enabled ->
+                if (enabled && state.connectedConsentShown) {
+                    vm.setConnectedMode(true)
+                } else if (enabled) {
+                    showDisclosure = true
+                } else {
+                    vm.setConnectedMode(false)
+                }
+            }
+            if (state.connectedMode) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Privacy: enabling Connected mode is the explicit opt-in seam (ADR-012/013) toward your " +
+                            "DataBank / cloud AI / Google bridge. The current offline build still sends nothing — " +
+                            "a connected action must be visibly invoked before any data leaves. The default build " +
+                            "keeps declaring NO INTERNET permission.",
+                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+
+    if (showDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showDisclosure = false },
+            title = { Text("Enable Connected mode?") },
+            text = {
+                Text(
+                    "Connected mode uploads selected content to your own DataBank / cloud so you can use " +
+                            "cloud AI and bridge your accounts. ShrinkMedia stays private by default: no file or " +
+                            "text leaves this device until you explicitly invoke a connected action. The default " +
+                            "build declares no INTERNET permission."
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showDisclosure = false
+                    vm.acknowledgeConnectedConsent()
+                }) { Text("I understand, enable") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisclosure = false }) { Text("Not now") }
+            }
+        )
     }
 }
 
