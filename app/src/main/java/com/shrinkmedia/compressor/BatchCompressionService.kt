@@ -52,6 +52,16 @@ class BatchCompressionService : Service() {
     private lateinit var batteryReceiver: BroadcastReceiver
     private var batteryReceiverRegistered = false
 
+    /**
+     * True only when the framework actually started this Service through
+     * `onStartCommand`. `stopForeground`/`stopSelf` are only meaningful for a
+     * genuinely started service (they throw when the service was never attached
+     * to the system, e.g. when the code is driven through the test seam). The
+     * production path always sets this in `onStartCommand`; the flag only refines
+     * the end-of-run teardown, never the batch loop itself.
+     */
+    private var startedBySystem = false
+
     companion object {
         const val CHANNEL_ID = "batch_compression_channel"
         const val CHANNEL_NAME = "Media Compression Background Tasks"
@@ -92,8 +102,7 @@ class BatchCompressionService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        createNotificationChannel()
+        initRuntimeDependencies()
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
@@ -106,7 +115,17 @@ class BatchCompressionService : Service() {
         }
     }
 
+    /** Initializes the runtime dependencies the batch loop depends on
+     *  (`notificationManager`, notification channel). Called from the real
+     *  `onCreate` lifecycle and from the test bootstrap hook so the real loop can
+     *  run under instrumentation without weakening the production path. */
+    private fun initRuntimeDependencies() {
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createNotificationChannel()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startedBySystem = true
         when (intent?.action) {
             ACTION_START_BATCH -> {
                 val uris = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -151,6 +170,21 @@ executeBatchProcessing(uris, isVideo, qualityName, autoSave, imageFormatName)
         autoSave: Boolean,
         imageFormatName: String = "JPEG"
     ) = executeBatchProcessing(uris, isVideo, qualityName, autoSave, imageFormatName)
+
+    /**
+     * Test-only bootstrap (visible-in-package only): a bare `Service` constructor
+     * has no attached base context nor lifecycle, so `applicationContext` (used by
+     * the audit log and compression plumbing) and `notificationManager` (the batch
+     * loop notifies progress) would be missing. Attach the real app context and
+     * initialize the runtime dependencies the loop relies on so the production
+     * `executeBatchProcessing` path can run for real under instrumentation.
+     * Production boots the service through Android's normal
+     * `Service.attach`/`onCreate`/`onStartCommand` lifecycle and never calls this.
+     */
+    internal fun attachTestContext(context: Context) {
+        attachBaseContext(context)
+        initRuntimeDependencies()
+    }
 
     suspend fun executeBatchProcessing(
         uris: List<Uri>,
@@ -246,8 +280,14 @@ executeBatchProcessing(uris, isVideo, qualityName, autoSave, imageFormatName)
             .build()
 
         notificationManager.notify(NOTIFICATION_ID + 1, finalNotification)
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        // Teardown is only meaningful for a service the framework actually started;
+        // when driven through the test seam there is nothing to stop (and calling
+        // stopForeground on an unattached service throws). The loop's contract —
+        // pause gate, audit, not-drop — completes regardless.
+        if (startedBySystem) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     /** On-device audit log for batch failures (Constitution I.6: "an audit record

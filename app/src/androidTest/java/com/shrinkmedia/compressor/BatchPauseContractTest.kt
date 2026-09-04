@@ -121,8 +121,11 @@ class BatchPauseContractTest {
 
         val baseline = repo.userSettingsFlow.first().totalHistoricalFilesCount
 
-        // Real service instance; drive the real batch loop via the test seam.
+        // Real service instance; drive the real batch loop via the test seam. A bare
+        // Service constructor has no attached context, so give it the app context so
+        // the loop's audit-logging and compression plumbing can run for real.
         val service = BatchCompressionService()
+        service.attachTestContext(ctx)
         BatchCompressionPauseController.isPaused.value = true // arm pause BEFORE the loop starts
 
         val job = async(Dispatchers.IO) {
