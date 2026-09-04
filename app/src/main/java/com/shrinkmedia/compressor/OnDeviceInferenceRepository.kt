@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 /**
  * On-device AI surface backed by ML Kit GenAI (Gemini Nano via Android AICore) per ADR-011.
@@ -62,11 +63,15 @@ object OnDeviceInferenceRepository {
         // Fail closed on OS versions that cannot run GenAI at all.
         if (Build.VERSION.SDK_INT < MIN_API_LEVEL) return Status.API_TOO_OLD
         return try {
-            when (Generation.getClient().checkStatus()) {
-                FeatureStatus.AVAILABLE -> Status.AVAILABLE
-                FeatureStatus.DOWNLOADABLE -> Status.DOWNLOADABLE
-                FeatureStatus.DOWNLOADING -> Status.DOWNLOADING
-                else -> Status.UNAVAILABLE
+            // Probing AICore binds the service; keep it off the main thread so a capable
+            // device's availability check never degrades the UI.
+            withContext(Dispatchers.IO) {
+                when (Generation.getClient().checkStatus()) {
+                    FeatureStatus.AVAILABLE -> Status.AVAILABLE
+                    FeatureStatus.DOWNLOADABLE -> Status.DOWNLOADABLE
+                    FeatureStatus.DOWNLOADING -> Status.DOWNLOADING
+                    else -> Status.UNAVAILABLE
+                }
             }
         } catch (_: Exception) {
             // Connecting to AICore can fail transiently (binding, setup). Treat as unavailable —
@@ -91,10 +96,13 @@ object OnDeviceInferenceRepository {
         return runOnDevice(prompt)
     }
 
-    /** Runs ONE inference via AICore, suspending on the real call. Coarse error mapping to [AiResult.Error]. */
+    /** Runs ONE inference via AICore, suspending on the real call. Coarse error mapping to [AiResult.Error].
+     *  Runs on a background dispatcher so a model query never blocks/degrades the UI thread. */
     private suspend fun runOnDevice(prompt: String): AiResult = try {
-        val response = Generation.getClient().generateContent(prompt)
-        val text = response.candidates?.firstOrNull()?.text
+        val text = withContext(Dispatchers.IO) {
+            val response = Generation.getClient().generateContent(prompt)
+            response.candidates?.firstOrNull()?.text
+        }
         if (text.isNullOrBlank()) AiResult.Unavailable
         else AiResult.Text(text.trim())
     } catch (e: Exception) {
