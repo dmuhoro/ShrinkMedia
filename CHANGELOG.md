@@ -5,6 +5,59 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [Unreleased] — 2026-09-05 (Ecosystem Directive: RSI governance + measurement + skills workbench + host tiers + DataBank vault MVP)
+
+> **No version bump — ShrinkMedia is in maintenance mode** (v0.9.0 released). This sprint answers the
+> 2026-09-05 directive (RSI requirements, ergodic + processing-vs-storage detail, 80/20 DataBank-first
+> roadmap, hardware optionality) **in code and doctrine**, and ships the **DataBank vault MVP** to its
+> own repo — the first working piece of the ecosystem.
+
+### Added
+
+- **ADR-016** — Ecosystem deployment profiles: `T0_TINY/T1_MID/T2_HEAVY` host tiers, fail-closed
+  backend/isolation decisions (SQLite+FTS5 default; Postgres+pgvector T2-only; containers only ≥8 GB).
+  Elitebook 2540p = bare-metal Debian 13, no hypervisor (RAM tax > isolation margin on ≤8 GB).
+- **`ecosystem/HostTier` + `HostClassifier` decision layer** — the phone becomes the "which machine
+  runs what" referee. 12 new JVM tests (suite 85 → **97**).
+- **`docs/operations/skills-workbench.md`** — the "how we build" upgrade: audited Matt Pocock's
+  `mattpocock/skills` (MIT, `3cca18b`), adopted 12 pieces (wayfinder decision-map, two-axis
+  code-review, seams-first TDD, to-spec, diagnosing-bugs loop, wait-what re-pitch, …) re-cut to our
+  invariants, with a **Reuse Ledger** (S-xx counted per use; a piece enters the SOP only after ≥2
+  real uses). `AGENTS.md §13` binds it.
+- **`docs/operations/measurement.md`** — metrics dictionary (M1 layer wall-clock → M10 reviewer
+  honesty), the per-layer **LayerLog**, and the **compression ledger** (naive-estimate ÷ achieved).
+  `SOP §6` now points at it.
+- **`docs/operations/rsia-program.md` + `rsia-authorizations.md`** — the RSI requirements
+  (R-01…R-08): provenance, blast radius, reversibility, evidence gate, telemetry, invariant-trade
+  ADR, timeline continuity, path-safety. **Owner is the sole authorizer; dial = 0 (OFF).** No agent
+  may self-authorize. `AGENTS.md §14` binds it. Ledger tracks accepted authorizations (none yet).
+- **`docs/operations/ecosystem-orientation.md`** — expanded: ergodic deep-dive (worked multiplicative
+  example: the +36%-EV bet that kills 65% of single timelines) + the **full processing-vs-storage
+  explainer** (library-archives vs reader-team; the exact seams; why brain-in-storage and per-app
+  storage are both rejected).
+- **`docs/operations/ecosystem-roadmap.md`** — rewritten as the **80/20 sequence**: DataBank daily-
+  use proof first (checkpoint A), then server layer, then stargate, then Forge, then EasyTutor, then
+  virtual-me; every cut named with the hours it saves.
+- **`docs/operations/shrinkmedia-stop-point.md`** — decision upgraded to **CONFIRMED ACTIVE
+  maintenance mode**; safe-to-stop with two conditions.
+- **DataBank** repo (`dmuhoro/DataBank`): **`dvault` vault MVP** — python-stdlib-only, SQLite+FTS5,
+  WAL, append-only, supersede-not-delete, JSONL journal audit, fail-closed (`put` refuses blank /
+  unknown supersede; `check` = records == journal + integrity); CLI `capture/query/list/count/check/
+  reindex`; **19 tests green** + runbook (`docs/RUNBOOK.md`) + Elitebook deploy doc
+  (`docs/DEPLOY.md`). Pushed to its own repo (SSH-signed commits).
+
+### Changed
+
+- **Suite** 85 → **97 JVM tests** (12 new HostClassifier), 0 failures; `lintDebug` 0 errors; merged
+  DEBUG+RELEASE manifests still declare **no `android.permission.INTERNET`**.
+- **`docs/current-state.md`** C25 row; **release-readiness** Sprint-21 gate; **sprint-cross-reference**
+  Sprint 21 row; **case study #3** (`docs/evidence/2026-09-05_ecosystem_directive_sprint.md`) runs the
+  new workbench units on real work (S-01…S-06).
+
+### Fixed
+
+- None (maintenance mode; no production code change to the media/AI paths).
+
 ## [0.9.0] — 2026-09-05 (Personal Intelligence Foundation + Ecosystem Go-Live)
 
 > Capability block (versionCode 10), per the locked scheme `0.x.0` = capability milestone. Ships the

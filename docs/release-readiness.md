@@ -4,6 +4,23 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: Sprint 21 — Ecosystem Directive (2026-09-05; NO app release — maintenance mode)
+
+> No version bump (stays 0.9.0/versionCode 10); CI still runs on push. ShrinkMedia produced
+> **ecosystem-track** infrastructure: host-tier decision code + doctrine + the DataBank vault MVP.
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| `ecosystem/HostTier` + `HostClassifier` decision layer (ADR-016: T0/T1/T2, fail-closed backend/isolation) | PASS | `app/src/main/java/com/shrinkmedia/compressor/ecosystem/HostTier.kt`; 12 JVM tests green |
+| JVM unit tests | PASS | **97 tests, 0 failures** (12 new HostClassifier) |
+| `lintDebug` | PASS | 0 errors |
+| `assembleDebug` / `processReleaseMainManifest` | PASS | BUILD SUCCESSFUL both |
+| Merged DEBUG + RELEASE manifests declare NO INTERNET | PASS | `rg android.permission.INTERNET` on merged manifests → no match (CI re-checks on push) |
+| Docs: ADR-016, skills-workbench (+AGENTS §13), measurement (+SOP §6), rsia-program + ledger (+AGENTS §14), orientation deep-dives, 80/20 roadmap, stop-point ACTIVE | PASS | cited in sprint-21 + case study #3 |
+| DataBank vault MVP (dvault, append-only, journal-backed) + 19 tests + runbook/deploy | PASS | `dmuhoro/DataBank` (commits `12d153a`, `fa6abd2`) |
+| CI after push | PASS | `gh run list` / `gh run view` (4 jobs) |
+| Honest boundaries: DataBank local-first (no server/transport yet); tiers = decision code; RSI dial = 0, ledger empty; no app release intended | CONSENT (not PASS) | sprint-21 §honest boundaries; rsia-authorizations.md |
+
 ## Gate: v0.9.0 — Personal Intelligence Foundation + Ecosystem Go-Live (2026-09-05, Sprint 20)
 
 | Criterion | Status | Citation / observed result |
