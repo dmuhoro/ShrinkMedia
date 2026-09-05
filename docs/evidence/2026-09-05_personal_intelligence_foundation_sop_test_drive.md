@@ -31,7 +31,9 @@ clock evidence.
 | 5 Review | Reviewer-gate: fail-closed checks, no silent drops, honest boundary (vision = ASPIRATIONAL), re-run gates | this file + case-study-1 precedent (`2026-09-04_forge_l1_…`) | 07:33Z |
 | 6 Evid/Docs | case study, orientation, roadmap, stop-point, sprint-20, CHANGELOG, current-state C24, release-readiness, cross-ref | `docs/evidence/2026-09-05_*.md` + doc updates | 07:52Z |
 | 7 Release | release build verified + repo setup (Forge + DataBank created) | `app-release.apk` badging 0.9.0/versionCode 10; `gh repo view dmuhoro/{Forge,DataBank}` = PRIVATE | 08:03Z |
-| 8 Commit/Push | 6 individual SSH-signed commits, push, tag, CI | git + CI (run id recorded once verified) | TBD (post-release) |
+| 8 Commit/Push | 6 individual SSH-signed commits, push, CI | git + CI run **33954385291** (all 4 jobs `success`, 5m40s, incl. all three no-INTERNET manifest guards); release published at 
+
+https://github.com/dmuhoro/ShrinkMedia/releases/tag/v0.9.0 | 08:07Z (push) → 08:15Z (release live) |
 | 9 Lessons | captured → this file (`case-002-*`) | this file | 07:52Z |
 
 ## Effectiveness / efficiency (SOP §6 telemetry)
