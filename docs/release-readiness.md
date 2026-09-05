@@ -4,6 +4,23 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: Sprint 23 — Ecosystem Execute, release-then-continue (2026-09-05; NO ShrinkMedia release — maintenance mode)
+
+> No version bump (stays 0.9.0/versionCode 10); CI still runs on push. ShrinkMedia produced **docs
+> only**: the combined execute doctrine + the owner-memory story + this sprint's record. The Daftari
+> install + live-sync wiring is cited here because it closed the largest "claimed-but-not-real"
+> capability in the ecosystem.
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| Daftari v6.5.0 shipped: install banner + dead-button fix + sync-state surfaced | PASS | `dmuhoro/Daftari` `83eacb3` `9563981` `a86fa2f` (+ tests); **376 unit tests** green, lint 0, i18n 226 keys |
+| Daftari sync no longer a no-op client **in the deployed bundle** | PASS | Vercel Production env set (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`); live curl of `daftari-amber.vercel.app` bundle → contains `https://rjedivbpldkroffswoyb.supabase.co`, `localhost:0` count **0** |
+| Daftari install-manifest correct in the deployed bundle | PASS | live `manifest.webmanifest` → `display=standalone`, PNG 192/512 + maskable; `apple-touch` 200 (verified in v6.4.0 run, unchanged) |
+| ShrinkMedia execute doctrine + owner-memory + sprint record + CHANGELOG + current-state C27 + cross-ref | PASS | `docs/operations/owner-memory.md`, SOP §0 execute-mode, `sprints/sprint-23-ecosystem-execute-daftari.md`, C27, cross-ref row 23, CHANGELOG Unreleased |
+| ShrinkMedia JVM suite (no app change) | PASS | **97 tests, 0 failures** (unchanged this sprint) |
+| Merged DEBUG + RELEASE manifests declare NO INTERNET | PASS | unchanged this sprint; CI re-checks on push |
+| Honest boundaries: final phone install gesture + confirmed real-account sign-in are the last Daftari steps; `verify:sync:live` exited 2 (anon email rate limit, surfaced not hidden); DataBank always-on host/transport still Checkpoint 1–7; Forge exit waits on owner's real tasks; RSI dial 0 | CONSENT (not PASS) | sprint-23 §honest-boundaries; checkpoint-map.md; rsia-authorizations.md |
+
 ## Gate: Sprint 22 — Ecosystem Execute (2026-09-05; NO app release — maintenance mode)
 
 > No version bump (stays 0.9.0/versionCode 10); CI still runs on push. ShrinkMedia produced **docs

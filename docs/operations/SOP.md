@@ -46,6 +46,32 @@ Lead. That is not a metaphor; it means the four hats are **always worn, in order
    corpus so we never re-invent the wheel.
 10. **One workspace at a time.** Sequential per-repo execution with shared contracts defined first.
 
+**Execute mode — study → pick → close → prove → record → ship → continue (the combined method):**
+The permanent multi-repo execute discipline fuses the older layer-by-layer rule with the newer
+*release-then-continue* cadence. When running a cross-repo directive it works exactly like this:
+
+1. **Understand the real project first** — clone the live origin, read the actual code, and find
+   the true boundary (the real submission / sync / install path) before touching anything.
+2. **Pick ONE real gap** — not scope creep. The Daftari run was: "installs like a browser tab /
+   claims cloud sync but the bundle ships a no-op client."
+3. **Close it at the real boundary** with fail-closed code + seams for verification.
+4. **Prove it** — unit tests AND, where possible, proof on the live/deployed artifact (e.g. a
+   `curl` that greps the deployed bundle for the real client, or a script that walks the real
+   network path).
+5. **Record it** — evidence + sprint doc + CHANGELOG + cross-reference, each committed separately
+   and SSH-signed.
+6. **Ship it** — push, watch CI+deploy, and verify the *deployed* artifact, not just the local
+   build.
+7. **Continue** only after the previous gap is provably released; then the next repo/layer, then
+   stop with an honest status (what is real vs still needs the Owner).
+
+A guardrail that surfaced as real: **the deploy boundary is part of the system.** A contribution
+from the wrong (stale) working tree can ship a regression even when CI is green — so the shipped
+artifact is verified by its content (bundle grep, manifest, live page), never by assumption.
+
+The Owner's frame lives in `docs/operations/owner-memory.md` (identity + abilities + the "it's
+already real, keep building" resolve).
+
 ---
 
 ## 1. The task lifecycle (the SOP pipeline)

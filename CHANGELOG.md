@@ -5,6 +5,42 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [Unreleased] — 2026-09-05 (Sprint 23 — Ecosystem Execute, release-then-continue: Daftari install-as-app + real Supabase sync + owner-memory/execute doctrine)
+
+> **No version bump — ShrinkMedia maintenance mode continues** (v0.9.0). The release-then-continue
+> directive ran across the ecosystem in layers: Daftari shipped v6.5.0 (install banner + the sync
+> that was only ever *code* is now wired into the **deployed** bundle and verified live); ShrinkMedia
+> produced the combined execute doctrine + the owner-memory story; DataBank restore + fault drills
+> and the next Forge step are their own layers (below). Full record in
+> `docs/sprints/sprint-23-ecosystem-execute-daftari.md`.
+
+### Added
+
+- **`docs/operations/owner-memory.md`** — the Owner's identity + abilities + resolve as a durable
+  story (the "real already, keep building" reframe), told simply, each ability backed by code/evidence.
+- **`docs/sprints/sprint-23-ecosystem-execute-daftari.md`** — this sprint's honest record (real gaps
+  found => fixes => boundaries still open).
+- **Daftari v6.5.0** (released, `dmuhoro/Daftari`): global `InstallBanner` + dead-button fix (7 new
+  tests; suite 369→**376**), `isSyncConfigured` surfaced in Settings, `verify:sync:live` real-network
+  script, `docs/supabase-wiring.md`. **Deployed + boundary-verified:** Vercel Production env set;
+  the live bundle embeds `https://rjedivbpldkroffswoyb.supabase.co` with **zero** `localhost:0`
+  fallback and a PNG-standalone manifest.
+
+### Changed
+
+- **`docs/operations/SOP.md` §0** — added the combined **execute mode** (study → pick → close →
+  prove → record → ship → continue) incl. the **deploy-boundary guardrail** learned this sprint (a
+  stale working tree nearly shipped a regression while CI was green; the deployed artifact is the
+  truth, verified by its content).
+- **`docs/current-state.md`** — C27 row (Sprint 23 ecosystem execute track).
+- **`docs/release-readiness.md`** — Sprint-23 gate summary; **`docs/sprint-cross-reference.md`** —
+  Sprint 23 row.
+
+### Fixed
+
+- (Daftari, not ShrinkMedia) the shipped bundle is no longer a no-op sync client — Vercel now has the
+  real URL + anon key, and the deployed app installs as a real standalone app with an in-app nudge.
+
 ## [Unreleased] — 2026-09-05 (Ecosystem Directive: RSI governance + measurement + skills workbench + host tiers + DataBank vault MVP)
 
 > **No version bump — ShrinkMedia is in maintenance mode** (v0.9.0 released). This sprint answers the
