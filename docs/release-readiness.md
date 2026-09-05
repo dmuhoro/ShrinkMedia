@@ -4,6 +4,24 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: Sprint 22 — Ecosystem Execute (2026-09-05; NO app release — maintenance mode)
+
+> No version bump (stays 0.9.0/versionCode 10); CI still runs on push. ShrinkMedia produced **docs
+> only**: the ecosystem hardening audit + the numbered checkpoint map. The executed work lives in the
+> sister-track repos (DataBank/Forge/Daftari), each with its own CI.
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| DataBank proven not server-specific + hardened | PASS | `dmuhoro/DataBank` `842da36` `e9a9c0a` `894a3bf`; **23 tests**, live Ubuntu run (PORTABILITY.md), CI ×3 OS |
+| Forge step-1 task schema + state machine, zero AI | PASS | `dmuhoro/Forge` `76df25a` `f097020`; **16 tests** incl. CLI subprocess boundary; live evidence journal |
+| Daftari installability root cause + production-build offline verification | PASS | `dmuhoro/Daftari` `60a1332`…`e6c8552`; **5 prod e2e + 10 dev e2e + 369 unit tests** green; v6.4.0 |
+| ShrinkMedia JVM unit tests (no app change) | PASS | **97 tests, 0 failures** (sprint-22 gate re-run) |
+| `lintDebug` | PASS | 0 errors |
+| `assembleDebug` / `processReleaseMainManifest` | PASS | BUILD SUCCESSFUL both |
+| Merged DEBUG + RELEASE manifests declare NO INTERNET | PASS | `rg android.permission.INTERNET` on merged manifests → no match (CI re-checks on push) |
+| Docs: hardening audit + checkpoint map + sprint-22 + CHANGELOG + current-state C26 + cross-ref | PASS | cited in sprint-22 + this table |
+| Honest boundaries: connected verdict + always-on host + real handset install still open (checkpoint #1–#7); Forge brief step-1 exit waits on the owner's real tasks; RSI dial 0 | CONSENT (not PASS) | checkpoint-map.md; sprint-22 §honest boundaries |
+
 ## Gate: Sprint 21 — Ecosystem Directive (2026-09-05; NO app release — maintenance mode)
 
 > No version bump (stays 0.9.0/versionCode 10); CI still runs on push. ShrinkMedia produced

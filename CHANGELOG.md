@@ -58,6 +58,35 @@ All notable changes to ShrinkMedia are documented here, following
 
 - None (maintenance mode; no production code change to the media/AI paths).
 
+## [Unreleased] — 2026-09-05 (Sprint 22 — Ecosystem Execute: DataBank proven + hardened, Forge step 1, Daftari installable, ShrinkMedia docs)
+
+> **No version bump — maintenance mode continues** (v0.9.0). The 2026-09-05 *execute* directive ran
+> sequentially across the ecosystem: DataBank proved on this machine (Ubuntu) and hardened; Forge
+> shipped its step-1 state machine; Daftari fixed its installability root cause and proved offline
+> survival on the production build; ShrinkMedia produced the hardening audit + checkpoint map.
+> Full record in `docs/sprints/sprint-22-ecosystem-execute.md`.
+
+### Added
+
+- **`docs/operations/hardening.md`** — cross-repo anti-fragility audit: where each ecosystem claim
+  is proven at the real boundary vs still needs a host/credentials, plus the failure-class guard map
+  (corrupt vault, oversized record, browser-shortcut install, offline drops, killed service, codec
+  gap, task-state violation) and what a PASS does *not* mean.
+- **`docs/operations/checkpoint-map.md`** — the numbered, exit-tested path to "DataBank + ShrinkMedia
+  function end-to-end without crashing": Checkpoint 0 (done, Ubuntu proof) through #7 (fault drills),
+  with the honest estimate (~1–2 focused weeks toward the connected verdict; gated ~2/3 of the way
+  by the always-on host + a real handset).
+
+### Changed
+
+- **`docs/current-state.md`** — C26 row (Sprint 22 ecosystem execute track).
+- **`docs/release-readiness.md`** — Sprint-22 gate summary; **`docs/sprint-cross-reference.md`** —
+  Sprint 22 row. CI re-runs on push (4 jobs; manifests still no INTERNET).
+
+### Fixed
+
+- None (ShrinkMedia production code untouched this sprint by design).
+
 ## [0.9.0] — 2026-09-05 (Personal Intelligence Foundation + Ecosystem Go-Live)
 
 > Capability block (versionCode 10), per the locked scheme `0.x.0` = capability milestone. Ships the
