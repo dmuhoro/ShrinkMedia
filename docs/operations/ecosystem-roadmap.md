@@ -1,46 +1,77 @@
-# Ecosystem Roadmap — size, complexity, time, and the connect sequence
+# Ecosystem Roadmap — size, complexity, time, and the 80/20 connect sequence
 
-> Answers the 2026-09-05 directive: *"I want to know how big and complex each of the projects are
-> so that we can estimate the time it would take us to complete building them and making them ready
-> to be connected to the eco-system and accessed via ShrinkMedia."* Estimates are honest ranges from
-> analogous builds by this team (calibration-0: 104 commits/6 days ≈ ~17 commits/day when focused),
-> not promises.
+> Answers the 2026-09-05 directive: *"I want to know how big and complex each of the projects are…
+> then let's incrementally reduce the total time to make the eco-system alive via the stargate, by
+> compressing our work with the 80/20 principle."* Estimates are honest ranges from analogous builds
+> by this team (calibration-0: 104 commits/6 days ≈ ~17 commits/day when focused), not promises.
+> Compression is measured, not claimed — every sprint logs estimate-vs-achieved in
+> `docs/operations/measurement.md`.
 
-## The connectable layer
+## The connectable layer (unchanged)
 
 Every product connects through the **MCP `vault.*` contract** (ADR-013): `vault.put` / `vault.get`
 / `vault.index` / `vault.query`. ShrinkMedia's Connected-mode stargate (ADR-012, OFF by default,
-consent-gated) is the first client hop. **A live connection requires the self-hosted DataBank
-server running on owner hardware + reachability — none of that exists yet; it is L2+.**
+consent-gated) is the first client hop. **A live connection requires the DataBank server running on
+owner hardware + reachability — the daily-run vault is real; the server/transport layer is the next
+milestone.**
 
-## Project inventory
+## The construction/decision map (S-05 shape: one decision ticket at a time)
 
-| Project | Role in eco-system | Main LOC (today) | Complexity (honest) | Remaining size estimate | Estimated focused time to "ready to connect" |
-|---|---|---|---|---|---|
-| **ShrinkMedia** | Phone portal / stargate / edge | main 2.7k + unit 0.7k + androidTest 0.7k | Mature; L1 complete (v0.8.0) | small: connected-MCP client adapter (L2) + release upkeep | **~2–4 weeks** for the real connected action (needs DataBank server) |
-| **Forge** | Orchestrator / builder: Planner·Retriever·Builder·Reviewer·Ops + evals + safety | core engine proofed in ShrinkMedia (ForgeTask, EcosystemIndex, LessonBook, ModelRouter) | Med–high (the "how we build" brain) | server/CLI program + evals harness + sandbox; forge.repo lift of the proven core | **~3–6 weeks** to a trustworthy single-repo orchestrator; +2–4 wk for adapters to each product |
-| **DataBank** | Vault: storage + index + processing-seam + auth | 0 (not yet a repo) | Med (but correctness-critical: it holds a life) | self-hosted server: object store, PgVector index, `vault.*` MCP, auth, version thin-client | **~2.5–4 weeks** to a reachable, secure local vault |
-| **EasyTutor** | Education / personal development (curricula, learner profile) | 0 | Med (learning loop + pedagogy-content authoring) | learning MVP + vault-backed learner profile + topic routing from virtual me | **~4–6 weeks** for a real MVP |
-| **Virtual me / DataBank brain** | Guardian/overseer; answers via your data | 0 (decision core proven: PersonalIntelligenceAgent) | High (research-grade once self-directed) | model runtime on home-lab (Ollama, encodings), RAG over vault, conscioious oversight gates | **Layered ~6–10 weeks** behind DataBank + Forge; self-directed mode stays ASPIRATIONAL |
+```
+ECOSYSTEM ACTIVATION ──────────────── decisions SO FAR
+  ├── DataBank daily-use proof (MVP built & tested 2026-09-05)  ✓ decided
+  │      next: run it daily on the Elitebook (owner hardware)    → DECISION 2
+  ├── DataBank server layer (transport+auth+reachability)        → DECISION 3
+  ├── ShrinkMedia stargate→connected (ADR-012, Tailscale)        → DECISION 4
+  ├── Forge orchestrator (lift proven core)                      → DECISION 5
+  ├── EasyTutor (vault-backed learner profile)                   → DECISION 6
+  └── virtual me (model runtime on owner hardware)               ⏸ fog-of-war/ASPIRATIONAL
+NOT yet specified: exact auth UX, encryption-at-rest key story, evals harness surface.
+OUT OF SCOPE (decided): no third-party cloud; no public TLS; no self-authored autonomy (RSI-A).
+```
 
-## Connect sequence (sequential, one layer at a time)
+The frontier today is **DECISION 2** (which daily cadence + hardware setup). One decision per
+session, per S-05: the map never graduates an out-of-scope item.
 
-1. **DataBank server on owner hardware** (self-hosted shell; `vault.*`; auth; local network first).
-2. **ShrinkMedia stargate → connected action** (MCP client behind consent; ADR-012, no-INTERNET
-   default preserved; release variant carries INTERNET behind explicit consent).
-3. **Forge orchestrator** (lift the proven core; Planner→Reviewer loop with evals + sandbox).
-4. **EasyTutor** (living on DataBank's learner profile + virtual-me `Learn` routing).
-5. **Virtual me** (RAG over the filled vault + model runtime; guardian gates above agents).
+## The 80/20 compression — what we deliberately cut (with the spend-the-time-elsewhere answer)
 
-**Required by the owner (not code):** home-lab hardware (RTX 3090+ 24 GB + low-power host,
-≈ $2,500–4,500, ADR-013 §8), reachability/credentials, and the off-machine keystore backup. Until
-item 1 exists, everything in ShrinkMedia stays on-device and the stargate remains a documented seam,
-not a live door.
+| 100%-shape ambition | 80/20 replacement (build this first) | Time saved (honest) |
+|---------------------|---------------------------------------|---------------------|
+| Hypervisor/VM layer on the Elitebook | **Bare-metal Debian 13 minimal** (T0_TINY, ADR-016) | ~1 day + RAM tax on a 2–8 GB host |
+| Postgres + pgvector + object store | **SQLite + FTS5 vault** (365-ok for a life of notes; PG is a T2 optionality, same `vault.*`) | ~1–2 weeks of infra ceremony |
+| Python web framework + TLS + public certs | **Stdlib-only `dvault` + Tailscale private net** (Tailscale = reachability without public ingress) | ~3–5 days + cert maintenance |
+| Polished multi-app UX before proof | **CLI daily rhythm first** (`dvault capture/query/check`) | ~1 week of UI not needed to prove value |
+| Full RAG/model reasoning to feel it work | **Keyword recall (deterministic, honest) first**; models stay ASPIRATIONAL until owner hardware | entire hardware dependency deferred |
+| 5-way integration from day one | **DataBank-first**: prove the vault alone, then connect the stargate, then Forge | the monotonic path (below) |
+
+## Sequential connect sequence (monotonic: each item unlocks the next, nothing skipped)
+
+1. **DataBank daily-use proof** — vault MVP exists and self-proves (19 tests, `dvault`); the
+   **Owner step**: flash the Elitebook (Debian 13, ADR-016), run it daily 2–5 minutes/day.
+   *Status checkpoint A = "memory is trustworthy".* (≈ 1–2 weeks of calendar, 0–5 focused hours)
+2. **DataBank server layer** — transport + auth + reachability in / outside the repo contract, still
+   speaking the same `vault.*`. Tailscale-first. (≈ 1–2 focused weeks)
+3. **ShrinkMedia stargate → connected action** — MCP client behind consent (ADR-012), no-INTERNET
+   default preserved, release variant carries INTERNET behind explicit consent. Ends with: push a
+   photo-note from ShrinkMedia into DataBank. (≈ 3–6 focused days once reachable)
+4. **Forge orchestrator** — lift the proven core (ForgeTask, EcosystemIndex, LessonBook, ModelRouter)
+   into a real single-repo program with evals + sandbox; internal decisions via the decision map (S-05).
+   (≈ 2–4 focused weeks)
+5. **EasyTutor** — vault-backed learner profile + `Learn` routing from virtual me. (≈ 3–6 focused weeks)
+6. **Virtual me / DataBank brain** — RAG over the filled vault + model runtime **on owner hardware**;
+   self-directed oversight stays ASPIRATIONAL until tier-2 hardware exists (ADR-016). (layered;
+   can receive from 4 even before 5)
+
+**Required by the owner (not code):** the Elitebook (or chosen tier) running DataBank daily now;
+later, tier-2 compute (gaming PC, ADR-016 table) for the local model runtimes, reachability
+credentials, and the off-machine keystore backup. Until item 1's checkpoint A is true, the vault is
+the scripted daily tool — not a network service; the stargate stays a documented seam.
 
 ## Definition of "eco-system alive and accessible via the stargate"
 
-Minimum meaningful milestone: **you can push a photo-note from ShrinkMedia into DataBank and ask
-the virtual me a question whose answer comes from your own vault**, end-to-end, on your hardware,
-with consent and no third-party cloud. That requires DataBank (1) + stargate action (2) + brain
-routing online — i.e. ~**6–9 weeks** of sequential focused work from today, plus the hardware. This
-is the honest S-curve the SOP telemetry will measure against.
+Minimum meaningful milestone: **you can push a photo-note from ShrinkMedia into DataBank and ask the
+virtual me a question whose answer comes from your own vault**, end-to-end, on your hardware, with
+consent and no third-party cloud. With the 80/20 cuts that is ~**7–12 focused weeks** of sequential
+work from today **minus the calendar time that only the Owner can spend** (the daily-loop proof is
+like compounding: it needs the owner's repetition, not the coding hours). This is the honest S-curve
+the SOP telemetry + compression ledger will measure against.

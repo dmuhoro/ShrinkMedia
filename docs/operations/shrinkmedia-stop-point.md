@@ -15,20 +15,26 @@
 | 5 | **Bug-fix releases only** (post-stop) | — | process decision | standing |
 | 6 | Stale orientation note | "…helpers are shippable but device-untested" contradicts verified PASS rows (C3/C4/C9/C10/C14) | corrected this sprint | doc hygiene |
 
-## The safest stop — decision
+## The safest stop — decision (CONFIRMED ACTIVE as of v0.9.0, 2026-09-05)
 
-**ShrinkMedia enters maintenance mode after v0.9.0.** It is feature-complete for its declared
-purpose (a private, on-device media/document/AI toolkit and the ecosystem's stargate). Every future
-ShrinkMedia change is:
-1. a **real bug fix** that ships with evidence, or
-2. a **stargate/connection task** that only happens *after* DataBank exists (roadmap 2), or
-3. an **ADR** (never a drive-by) for anything else.
+**ShrinkMedia is in maintenance mode. It IS safe to stop and move to the eco-system** — with two
+honest conditions:
 
-New feature work moves to Forge (builder), DataBank (vault), EasyTutor (education), per the
-roadmap's connect sequence. ShrinkMedia keeps releasing v0.9.y patched and stays the phone face of
-the eco-system; the stargate door is built and its key (the connected adapter) is forged with
-DataBank, not inside this repo.
+1. **It is safe to stop *building***, because it is feature-complete for its declared purpose (a
+   private, on-device media/document/AI toolkit and the ecosystem's stargate). ShrinkMedia releases
+   v0.9.y patched (bug-fix only) and stays the phone face of the eco-system; the stargate door is
+   built and its key (the connected adapter) is forged with DataBank, not inside this repo.
+2. **It is NOT safe to *forget***: items 1–4 above stay on the owner's plate permanently (keystore
+   backup MUST-DO; C17 becomes the stargate milestone). Maintenance-mode discipline is that nothing
+   ShrinkMedia-related changes except: a **real bug fix** with evidence, a **stargate/connection
+   task after DataBank exists**, or an **ADR** (never a drive-by).
+
+Every future ShrinkMedia change is therefore governed by the same SDLC as any other repo — it is
+just low-volume. The **host-tier decision layer added 2026-09-05** (`ecosystem/HostTier`, ADR-016)
+was planted *inside* ShrinkMedia so the phone stays the natural place where the "which machine runs
+what" decision lives — that is planning infrastructure, not new product scope.
 
 **Honest boundary:** stopping ShrinkMedia does not mean the eco-system is alive — it means the
 *vessel* is done. Alive happens when DataBank + stargate action + virtual-me routing run on owner
-hardware (≈ roadmap "6–9 weeks + hardware").
+hardware (roadmap sequence, ≈ 7–12 focused weeks + the owner's daily-loop proof). RSI/Autonomy is a
+separate ledger and stays OFF (dial 0) until the Owner authorizes (see `docs/operations/rsia-program.md`).

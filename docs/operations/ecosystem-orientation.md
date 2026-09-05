@@ -32,6 +32,13 @@ his own hardware is still to be built (see `ecosystem-roadmap.md`).
   repeating a bet over time equals the average over many people at one instant. Personal life is
   **non-ergodic**: you get exactly one timeline, so path-dependent ruin (lose everything once =
   lose your retirement) is fatal even if the "expected value" looks good.
+- **Worked number (why expectation lies on one timeline):** Bet B pays *+50% with 90% probability,
+  −90% with 10%*. Its expected value per round is `0.9×1.5 + 0.1×0.1 = 1.36` (+36%) — beautiful on
+  paper. But play it once per life timeslot for 10 rounds: `0.9^10 ≈ 35%`, meaning **65% of single
+  timelines smoke the −90% at least once**, and if −90% is existential you are dead in 2-of-3 lives
+  even though "the average person" would be wealthy. Bet A — *+10% vs −9%*, roughly flat geometric
+  mean — looks boring but is positive on *every* path ≈ forever. **This is why the design prefers
+  durable, compoundable, boring choices over high-variance glory.**
 - The design consequence for a single-owner eco-system: **favor strategies that are good on a
   repeated, single-player basis** — small compoundable wins — and **never take existentially
   destructive risks**. Concretely in the vault:
@@ -40,15 +47,57 @@ his own hardware is still to be built (see `ecosystem-roadmap.md`).
   - fail-closed defaults (OFF by default, consent to go ON);
   - every task writes a lesson → the *next* task inherits the win (compounding).
 - That is how "a compounding system that works in my favor all or most of the time" is engineered:
-  not by luck, but by making each repeated decision path-safe and recorded.
+  not by luck, but by making each repeated decision path-safe and recorded. The same logic gated RSI
+  (see `docs/operations/rsia-program.md`): self-improvement is allowed only as path-safe,
+  reversible, evidence-gated steps — never as a one-shot "big rewiring" bet.
 
-## 4. Processing vs storage — the decision (your 2026-05-29 question)
+## 4. Processing vs storage — the FULL decision (the requested detailed explainer)
 
-**Separate systems, joined by a contract; the vault is memory, not a body.** Storage (DataBank,
-append-only, durable, indexable) owns the data; the processing brain (Forge + virtual me) reads
-and writes it via `vault.get/put/index/query` (ADR-013 MCP). The brain can be replaced freely
-without touching life-data; a brain inside storage would couple data format to brain version and
-make "install new ways of thinking" dangerous. Full rationale + alternatives: **ADR-015 §1**.
+**Separate systems, joined by a contract; storage is dumb, durable, eternal; the brain is
+replaceable.** This is the deepest architectural decision in the ecosystem, so the full reasoning:
+
+**The library metaphor.** Think of a working library. The **archives** hold every book duplicate-safe,
+temperature-regulated, indexed; they are deliberately dumb — a shelf does not change the books, does
+not interpret them, and does not decide what to read next. The **reader team** (librarians with
+different specialties) checks books out through a single lending desk, edits research notes, and
+trains new librarians. Replace the entire team tomorrow and the archives are untouched: the books are
+exactly where they were. That is the split: **DataBank = the archives (lending desk = the `vault.*`
+contract, ADR-013); Forge + virtual-me + EasyTutor = the reader team (processors, ADR-014).**
+
+**What lives where — the exact seams:**
+
+| Concern | Where it lives | Why |
+|---------|---------------|-----|
+| Life-data (notes, OCR transcripts, category, timeline, reappearedAt, supersedes) | **DataBank vault** — SQLite+FTS5 today, journal-backed, append-only (see `DataBank` repo; MVP built + tested) | Durable, indexable, survives every brain upgrade |
+| The only shape the brains must agree on | **`NoteRecord`** — a stable, versioned type (id/source/text/notedAt/reappearedAt/followedBy/thread/supersedes) | One contract = free concurrency between different brains |
+| Reading/writing the data | **`vault.get/put/index/query`** (MCP, ADR-013) | The lending desk is the only door; nothing else touches the shelves |
+| Recognising the thought (OCR, voice transcript) | **`OcrHelper` / voice models as *readers*** | Swappable like a librarian; Home-lab model via `ModelRouter` (ADR-014) = ASPIRATIONAL |
+| Deciding what the thought is / wants (recall vs learn vs save vs clarify vs refuse) | **`PersonalIntelligenceAgent` (decision logic)** | A replaceable body: rewrite its rules without touching any record |
+| Orchestrating maintenance/improvement of the ecosystem itself | **Forge (SOP executor)** | A replaceable body atop the SAME vault + gates; RSI rules in `rsia-program.md` |
+| Teaching the owner | **EasyTutor** | Its own product, same contract; data stays in the vault |
+
+**Why NOT "a brain inside storage" (the rejected alternative):** if reasoning lived inside the memory
+substrate, then *data format, brain version, and capacity* would be one ball of couplings. Every
+brain upgrade would be a data migration — and a migration is, on a non-ergodic timeline, a probable
+data-loss event. It also makes concurrent brains impossible (ShrinkMedia, Forge, EasyTutor can't read
+the same store if each expects its own mental format), and it gives a bug in the brain write-access
+to the life-data — violating the append-only invariant by construction.
+
+**Why NOT "everything local per-app" (the other rejected alternative):** your own words —
+*"focus on the fact that holding onto your thoughts is SO valuable, SO durable, SO important"* —
+a vault that lives inside a single app dies when the app dies. Text in a phone photos library, a
+voice note folder, a scratch document = five different organs with no shared index. DataBank's whole
+point is one place where PHOTO/VOICE/TYPED/CAMERA notes all land, findable forever.
+
+**What this buys you concretely:**
+1. **The brain is replaceable.** Swap ShrinkMedia's agent for a smarter one, or replace the whole
+   product, and a life's data is exactly where it was, still readable by the oldest tool.
+2. **Multiple concurrent readers.** ShrinkMedia recalls, Forge builds from, EasyTutor coaches from —
+   all through the same lending desk, none locking the other out.
+3. **Timeline survival.** Past → present → future is one append-only line; nothing ever has to be
+   "re-contextualised from scratch" by a new product (that is ADR-015 §3 supersede, never destroy).
+4. **Failure isolation.** A broken brain can only refuse loudly (`vault.*` refuses with a reason,
+   no silent drops); it can never corrupt the archives.
 
 ## 5. Records, categories, timelines
 
