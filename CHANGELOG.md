@@ -5,6 +5,65 @@ All notable changes to ShrinkMedia are documented here, following
 **Fixed**, **Removed**. The full per-sprint narrative lives in
 `docs/sprints/`.
 
+## [0.9.0] — 2026-09-05 (Personal Intelligence Foundation + Ecosystem Go-Live)
+
+> Capability block (versionCode 10), per the locked scheme `0.x.0` = capability milestone. Ships the
+> **Personal Intelligence foundation** (ADR-015) and the **ecosystem go-live decisions**, and marks
+> **ShrinkMedia's safest stop** — the app enters **maintenance mode** after this release; new feature
+> work moves to the Forge (builder) and DataBank (vault) repos, which are now created and scaffolded.
+> No INTERNET is added; the default build stays private and on-device.
+
+> This is the app's contribution to "bring the digital realm to life": a phone that can read a photo
+> of a note, decide on its own whether the intent is clear or needs one targeted question, and route
+> the thought (save-to-vault / recall-from-corpus / learn-via-EasyTutor / clarify / refuse-loudly).
+> The vision-era "vividly describe the image" captioning is **not claimed** — OCR is real, the
+> vision model is a documented ASPIRATIONAL seam (C11 wall / ModelRouter). The on-device vault is
+> in-memory this release; syncing to DataBank is a future Connected-mode step on owner hardware.
+
+### Added
+
+- **ADR-015** (`docs/adr/ADR-015-personal-intelligence-gateway.md`): storage and processing are
+  **separate**, joined by the `vault.*` contract (MCP, ADR-013). The vault is the brain's memory,
+  not its body — append-only, supersede-not-delete ("delete old ways of thinking" = version, never
+  data loss), so past/present/future timelines stay one line. Best move for the owner's future:
+  replace the brain freely without touching life-data.
+- **Vault categories the owner asked for**: `NoteRecord` (`notedAt` = date noted, `reappearedAt` =
+  when it showed up again, `followedBy` = what came after, `thread`, `supersedes`, source
+  PHOTO/VOICE/TYPED/CAMERA) + `NoteClassifier` (deterministic successor link + re-appearance
+  detection by idea-marker overlap; **honest: keyword-match, not semantic**). 9 JVM tests.
+- **Image Insight (note-insight) flow** — `InstructionAider`: OCR-on-device → typed decision
+  SelfExplanatory (proceed) / NeedsClarification (exactly one question, then proceed) /
+  Refused (OCR failure — never guess). 8 JVM tests.
+- **PersonalIntelligenceAgent** — the virtual-me *decision* layer: Recall (own-corpus evidence,
+  never invented) / Learn (topic routed to EasyTutor — education stays in its domain) /
+  SaveToVault (incl. re-captures, never dropped) / Clarify / Refused. 8 JVM tests.
+- **UI — "Personal Intelligence — note insight" card** (Elite AI tab): pick a note photo → OCR →
+  clarify-or-proceed → save to the on-device vault with the agent's routing shown.
+- **Ecosystem go-live docs**: `docs/operations/ecosystem-orientation.md` (honest answers to the
+  directive: RSI = gated self-improvement, ergodic value = path-safe compounding, processing-vs-
+  storage decision, EasyTutor placement, virtual-me flow, impulse-vs-response framing),
+  `docs/operations/ecosystem-roadmap.md` (per-project size/complexity/time + connect sequence),
+  `docs/operations/shrinkmedia-stop-point.md` (incomplete-task inventory; maintenance-mode stop).
+- **Forge + DataBank repos created** (private: `dmuhoro/Forge`, `dmuhoro/DataBank`) with purpose /
+  invariants / README scaffolds — the next programs begin.
+
+### Changed
+
+- **Version** 0.8.0 → **0.9.0**, versionCode 9 → **10**.
+- **`docs/current-state.md`**: C24 row (Personal Intelligence foundation); corrected a **stale
+  orientation note** that said compression/PDF helpers were "device-untested" while C3/C4/C9/C10/C14
+  hold verified device PASS — doc hygiene, assertion set unchanged.
+- **Suite** 60 → **85 JVM tests** (25 new personal tests), 0 failures; `lintDebug` 0 errors; merged
+  DEBUG+RELEASE manifests still declare **no `android.permission.INTERNET`**.
+
+### Fixed
+
+- *InstructionAider clarify-loop discarding the transcript* (caught by test): an ambiguous scan now
+  keeps its text so the answer resolves to SelfExplanatory; a no-text scan resolves to Refused
+  (terminates, never loops).
+- *PersonalIntelligenceAgent recall gate swallowing re-captures* (caught by test): a re-affirmed
+  idea is stored as a reappearing vault record (reappearedAt), never silently dropped.
+
 ## [0.8.0] — 2026-09-04 (Operational Workflow — the SOP + Forge portable engine)
 
 > **Catch-up release.** This is the first GitHub release since **v0.6.0**. The v0.7.0 and v0.7.1

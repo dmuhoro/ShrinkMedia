@@ -177,9 +177,9 @@ are tracked (false-block rate). That number gates autonomy widening — not a ca
 
 ## 6. Productivity & "building-at-scale" telemetry
 
-We measure, not guess. Baseline observed from git history (ShrinkMedia): **104 commits, 18
-sprints, 14 ADRs, 27 evidence files, v0.0→v0.7.1 across first-commit 2026-08-30 → 2026-09-04
-(6 committed days, ~17 commits/day)**. (Earlier drafts cited "~33 days" — corrected: the committed
+We measure, not guess. Baseline observed from git history (ShrinkMedia): **104 commits, 19
+sprints, 15 ADRs across first-commit 2026-08-30 → 2026-09-05, 85 JVM tests, 0 failures**
+**(6 committed days, ~17 commits/day)**. (Earlier drafts cited "~33 days" — corrected: the committed
 history is 6 days.) That is our current operating point; recognizing it is not a ceiling, it is the
 **calibration 0**.
 

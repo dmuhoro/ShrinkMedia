@@ -4,6 +4,25 @@
 > citation into `docs/evidence/` or a sprint record — never narrative alone
 > (Constitution Article VII).
 
+## Gate: v0.9.0 — Personal Intelligence Foundation + Ecosystem Go-Live (2026-09-05, Sprint 20)
+
+| Criterion | Status | Citation / observed result |
+|-----------|--------|----------------------------|
+| Version 0.9.0 / versionCode 10 | PASS | `app/build.gradle.kts`; APK badging |
+| ADR-015 (processing around the vault; vault categories; note-insight; virtual-me routing) | PASS | `docs/adr/ADR-015-*.md`; case study #2 runs phases 0–9 |
+| `NoteRecord` + `NoteClassifier` vault categories (notedAt/reappearedAt/followedBy/thread/supersedes) | PASS | 9 JVM tests green |
+| `InstructionAider` Image Insight (SelfExplanatory / NeedsClarification / Refused; clarify-then-proceed) | PASS | 8 JVM tests green |
+| `PersonalIntelligenceAgent` routing (Recall/Learn→EasyTutor/SaveToVault/Clarify/Refused, re-captures never dropped) | PASS | 8 JVM tests green |
+| UI note-insight flow (OCR → clarify-or-proceed → on-device vault) | PASS | `MainActivity.kt`; `assembleDebug` green |
+| JVM unit tests | PASS | **85 tests, 0 failures** (25 new personal tests) |
+| `lintDebug` | PASS | 0 errors (29 informational warnings) |
+| `assembleDebug` | PASS | BUILD SUCCESSFUL |
+| `assembleRelease` (R8) + default DEBUG/RELEASE merged manifests NO INTERNET | PASS | badging + `rg android.permission.INTERNET` → no match |
+| CI (Governance / Web / Android / signed release AAB) | PASS | all jobs green on push |
+| Docs: ecosystem-orientation, roadmap, stop-point, sprint-20, CHANGELOG [0.9.0], current-state C24 | PASS | cited in sprint-20 + this table |
+| Forge + DataBank repos created + scaffolded (private) | PASS | `gh repo view dmuhoro/Forge`, `dmuhoro/DataBank` |
+| Honest boundaries: on-device in-memory vault; vision "description" ASPIRATIONAL; stargate connected action = L2+ (owner hardware/credentials) | CONSENT (not PASS) | ADR-015; roadmap items 1–5 |
+
 ## Gate: v0.8.0 — Operational Workflow (SOP + Forge engine) catch-up release (2026-09-04, Sprint 19)
 
 | Criterion | Status | Citation / observed result |
