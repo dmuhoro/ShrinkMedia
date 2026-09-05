@@ -192,6 +192,13 @@ The scale model (how "potential %" is anchored):
 
 The first deliverables of this SOP make the number **measurable** (telemetry) instead of assumed.
 
+**Measurement upgrades (2026-09-05):** the metrics dictionary, the per-layer **LayerLog**, and the
+**compression ledger** (naive-sequential-estimate ÷ achieved wall-clock per sprint) live in
+`docs/operations/measurement.md`. Every sprint doc now carries a LayerLog block (M1–M8) and the
+telemetry plate updates only with evidence. Reuse of adopted units is counted in
+`docs/operations/skills-workbench.md` §3 (Reuse Ledger) — a unit enters the SOP only after ≥2 real
+uses (the buy-in test).
+
 ---
 
 ## 7. Adoption

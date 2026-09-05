@@ -88,3 +88,23 @@ narrative alone.
 
 Report gaps accurately. Closing one gap never means "risk is complete". A capability marked
 ASPIRATIONAL stays ASPIRATIONAL until it is implemented **and** verified.
+
+## 13. Reuse Every Unit — Steal Like an Artist, Then Measure the Compounding
+
+Good judgement is software. Before re-deriving any procedure, check `docs/operations/skills-workbench.md`
+(the adopted piece catalog) and the SOP: if a unit already covers your task, **use it and add a row
+to the Reuse Ledger** (piece-id S-xx, work, time-saved estimate). A practice is only forced into the
+SOP after **≥2 real uses** on different work (the buy-in test). When a task repeats twice with pain
+and still has no unit, draft it as a candidate piece and record the proposed S-id. Composition rules
+(SKILL-MECHANICS adapted): a unit is a name, a one-line trigger, a sequence, and completion criteria;
+long reference lives outside the unit; when units multiply past memory, add a router unit rather than
+more always-on docs.
+
+## 14. RSI Is Gated By The Owner — Never Self-Authorizing
+
+The ecosystem's self-maintenance/self-improvement (RSI) is **OFF by default and gated by the Owner**:
+the Owner is the sole authorizer of any maintenance or improvement the system performs on itself.
+No agent, Forge instance, or automated loop may approve its own action — see
+`docs/operations/rsia-program.md` for the full requirements (provenance, blast radius, reversibility,
+evidence gate, telemetry, invariant protection). A change that would self-authorize is a violation
+of the Constitution, not a convenience.
