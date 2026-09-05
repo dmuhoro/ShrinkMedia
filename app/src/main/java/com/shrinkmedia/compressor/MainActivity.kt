@@ -56,6 +56,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.SessionState
+import com.shrinkmedia.compressor.personal.ImageInsight
+import com.shrinkmedia.compressor.personal.InstructionAider
 import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument as ITextDoc
 import com.itextpdf.kernel.pdf.PdfReader
@@ -156,7 +158,13 @@ data class UiState(
     val mediaSelecting: Boolean = false,
     val mediaSelection: Set<Long> = emptySet(),
     val onboardingDismissed: Boolean = false,
-    val pdfPreview: PdfPreviewState? = null
+    val pdfPreview: PdfPreviewState? = null,
+    val noteScanUri: Uri? = null,
+    val noteTranscript: String? = null,
+    val noteInsight: ImageInsight? = null,
+    val noteStatus: String = "",
+    val agentRoute: String? = null,
+    val vaultCount: Int = 0
 )
 
 data class PdfPreviewState(
@@ -419,7 +427,77 @@ class ToolkitViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // ----- Recent / Delete / Trash / Undo / Clear -----
+    // ----- Personal Intelligence: scan a note photo -> OCR -> clarify-or-proceed -> agent -----
+    private val personalAgent = com.shrinkmedia.compressor.personal.PersonalIntelligenceAgent(
+        com.shrinkmedia.compressor.forge.EcosystemIndex()
+    )
+
+    /** Scan a photo of a note: OCR it, decide self-explanatory vs clarify vs refuse (ADR-015 §5). */
+    fun scanNote(uri: Uri) {
+        if (_state.value.busy) return
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    busy = true,
+                    status = "Scanning your note on-device…",
+                    noteScanUri = uri,
+                    noteTranscript = null,
+                    noteInsight = null,
+                    noteStatus = "",
+                    agentRoute = null
+                )
+            }
+            val text = OcrHelper.recognizeText(getApplication<Application>().applicationContext, uri, _state.value.ocrLanguage.key)
+            val insight = InstructionAider.decide(text)
+            _state.update {
+                it.copy(
+                    noteTranscript = text,
+                    noteInsight = insight,
+                    noteStatus = describeInsight(insight),
+                    status = "Note scan complete."
+                )
+            }
+            _toast.tryEmit(describeInsight(insight))
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
+    /** Answer the one clarifying question (if any); a self-explanatory image proceeds. */
+    fun answerNoteQuestion(answer: String) {
+        val current = _state.value.noteInsight ?: return
+        val resolved = InstructionAider.answer(current, answer)
+        _state.update { it.copy(noteInsight = resolved, noteStatus = describeInsight(resolved)) }
+        _toast.tryEmit(describeInsight(resolved))
+    }
+
+    /** Save the scanned thought into the personal vault + corpus; the agent routes it (ADR-015 §4). */
+    fun saveNoteToVault() {
+        val transcript = _state.value.noteTranscript?.takeIf(String::isNotBlank) ?: return
+        val decision = personalAgent.ask(transcript, com.shrinkmedia.compressor.personal.NoteSource.PHOTO)
+        _state.update {
+            it.copy(
+                agentRoute = describeDecision(decision),
+                vaultCount = personalAgent.vaultSize,
+                status = "Personal vault now holds ${personalAgent.vaultSize} thought${if (personalAgent.vaultSize == 1) "" else "s"} — on-device."
+            )
+        }
+        _toast.tryEmit("Vault: ${personalAgent.vaultSize} recorded thought${if (personalAgent.vaultSize == 1) "" else "s"}.")
+    }
+
+    private fun describeInsight(insight: ImageInsight): String = when (insight) {
+        is ImageInsight.SelfExplanatory -> "Clear intent: ${insight.intent}."
+        is ImageInsight.NeedsClarification -> insight.question
+        is ImageInsight.Refused -> insight.reason
+    }
+
+    private fun describeDecision(decision: com.shrinkmedia.compressor.personal.Decision): String = when (decision) {
+        is com.shrinkmedia.compressor.personal.Decision.Recall -> "This is in your knowledge already — ${decision.hit.snippet.take(120)}"
+        is com.shrinkmedia.compressor.personal.Decision.Learn -> "Routed to EasyTutor for deeper learning: ${decision.topic}"
+        is com.shrinkmedia.compressor.personal.Decision.SaveToVault -> "Stored as a thought (${decision.record.id}). ${if (decision.record.reappearedAt != null) "This idea has returned before." else "Noted for the first time."}"
+        is com.shrinkmedia.compressor.personal.Decision.Clarify -> decision.question
+        is com.shrinkmedia.compressor.personal.Decision.Refused -> decision.reason
+    }
+// ----- Recent / Delete / Trash / Undo / Clear -----
     fun deleteRecent(recent: RecentCompression) {
         val context = getApplication<Application>().applicationContext
         val src = File(recent.filePath)
@@ -687,6 +765,7 @@ fun ThemeWrapper(mode: AppThemeMode, content: @Composable () -> Unit) {
     val pdfBatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { viewModel.mergePdfs(it) }
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::pdf) }
     val ocrImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::ocrImage) }
+    val noteImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(viewModel::scanNote) }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -712,7 +791,7 @@ fun ThemeWrapper(mode: AppThemeMode, content: @Composable () -> Unit) {
                 when (state.tab) {
                     ToolkitTab.MEDIA -> MediaTab(state, viewModel, { imagePicker.launch("image/*") }, { videoPicker.launch("video/*") }, { imageCompressBatchPicker.launch("image/*") }, { videoCompressBatchPicker.launch("video/*") })
                     ToolkitTab.DOCUMENTS -> DocumentsTab(state, viewModel, { imageBatchPicker.launch("image/*") }, { pdfPicker.launch("application/pdf") }, { pdfBatchPicker.launch("application/pdf") })
-                    ToolkitTab.AI -> AiTab(state, viewModel, { pdfPicker.launch("application/pdf") }, { ocrImagePicker.launch("image/*") })
+                    ToolkitTab.AI -> AiTab(state, viewModel, { pdfPicker.launch("application/pdf") }, { ocrImagePicker.launch("image/*") }, { noteImagePicker.launch("image/*") })
                 }
                 RecentSection(state, viewModel)
             }
@@ -905,14 +984,64 @@ private fun MediaTab(state: UiState, vm: ToolkitViewModel, pickImage: () -> Unit
     }
 }
 
-@Composable private fun AiTab(state: UiState, vm: ToolkitViewModel, pickPdf: () -> Unit, pickOcrImage: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+@Composable private fun AiTab(state: UiState, vm: ToolkitViewModel, pickPdf: () -> Unit, pickOcrImage: () -> Unit, pickNoteImage: () -> Unit) = LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
     item { Hero("Elite AI Assistant", "A private, on-device text pipeline. Read text from PDFs and photos without any file leaving this device.") }
     item { Card { Column(Modifier.padding(16.dp)) { Text("Local PDF text scraper", fontWeight = FontWeight.Bold); Text("Extracts embedded text from a local PDF stream (iText).", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(pickPdf) { Text("Choose PDF") }; Button({ vm.extractText() }, enabled = state.pdfUri != null) { Text("Extract text") } } } } }
     if (state.extractedText.isNotBlank()) item { Card { Column(Modifier.padding(16.dp)) { Text("Extracted PDF text", fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp)); Text(state.extractedText.take(12000), fontSize = 13.sp) } } }
     item { Card { Column(Modifier.padding(16.dp)) { Text("Scan reader (OCR)", fontWeight = FontWeight.Bold); Text("Reads printed ${state.ocrLanguage.label} text from a photo or scan — fully on-device via ML Kit, no model download and no upload. (Handwriting recognition is not yet supported.)", fontSize = 13.sp); Spacer(Modifier.height(10.dp)); Button({ pickOcrImage() }, enabled = !state.busy) { Text(if (state.busy) "Working…" else "Choose scan image") } } } }
     if (state.ocrUri != null) item { Card { Column(Modifier.padding(16.dp)) { Text(state.ocrStatus, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp); if (!state.ocrText.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Text(state.ocrText.take(12000), fontSize = 13.sp) } } } }
+    item { NoteInsightCard(state, vm, pickNoteImage) }
     item { PersonalIntelligenceCard() }
     item { ConnectedModeCard(state, vm) }
+}
+
+@Composable
+private fun NoteInsightCard(state: UiState, vm: ToolkitViewModel, pickNoteImage: () -> Unit) {
+    var answer by remember { mutableStateOf("") }
+    val insight = state.noteInsight
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Personal Intelligence — note insight", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("Scan a photo of one of your notes. ShrinkMedia reads it on-device, then either proceeds on its own (clear intent) or asks one targeted question. Sync to the DataBank vault is a future Connected-mode step — this stays on your phone.", fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button({ pickNoteImage() }, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(if (state.busy) "Scanning…" else "Scan a note / idea from a photo") }
+
+            state.noteStatus.takeIf { it.isNotBlank() }?.let { status ->
+                Text(status, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+            }
+            state.noteTranscript?.takeIf { it.isNotBlank() }?.let { transcript ->
+                Card { Column(Modifier.padding(12.dp)) { Text("Read from the image:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp); Spacer(Modifier.height(6.dp)); Text(transcript.take(1200), fontSize = 13.sp) } }
+            }
+            when (insight) {
+                is ImageInsight.NeedsClarification -> {
+                    OutlinedTextField(
+                        value = answer,
+                        onValueChange = { answer = it },
+                        label = { Text("Your answer") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = { vm.answerNoteQuestion(answer); answer = "" },
+                        enabled = answer.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Answer & proceed") }
+                }
+                is ImageInsight.SelfExplanatory -> {
+                    Button({ vm.saveNoteToVault() }, modifier = Modifier.fillMaxWidth()) { Text("Save to my personal vault") }
+                }
+                is ImageInsight.Refused -> Unit
+                null -> Unit
+            }
+            if (state.vaultCount > 0) {
+                Text("Vault (on-device): ${state.vaultCount} thought${if (state.vaultCount == 1) "" else "s"} recorded.", fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            state.agentRoute?.let { route ->
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                    Text(route, modifier = Modifier.padding(12.dp), fontSize = 13.sp)
+                }
+            }
+        }
+    }
 }
 
 @Composable private fun PersonalIntelligenceCard() {
